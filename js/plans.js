@@ -8,31 +8,32 @@
 
 import { DEFAULT_STRUCTURE, DEFAULT_SETS } from './data.js';
 import { state } from './state.js';
+import { userPrefix } from './user.js';
 
-const PLANS_KEY = 'plans';            // [{id, name}]
-const CURRENT_PLAN_KEY = 'currentPlan';
-const BASE_PLAN_ID = 'p0';            // alap-terv: prefix nélküli kulcsok
+const BASE_PLAN_ID = 'p0';            // alap-terv: nincs terv-prefix
+function plansKey(){ return `${userPrefix()}plans`; }
+function currentPlanKey(){ return `${userPrefix()}currentPlan`; }
 
 // ── Terv-lista ──
 export function getPlans(){
-  const raw = localStorage.getItem(PLANS_KEY);
+  const raw = localStorage.getItem(plansKey());
   if(raw){
     try{ const arr = JSON.parse(raw); if(Array.isArray(arr) && arr.length) return arr; }catch(e){}
   }
   // alapértelmezett: egyetlen alap-terv
   const def = [{ id: BASE_PLAN_ID, name: 'Alap terv' }];
-  localStorage.setItem(PLANS_KEY, JSON.stringify(def));
+  localStorage.setItem(plansKey(), JSON.stringify(def));
   return def;
 }
 function savePlans(plans){
-  localStorage.setItem(PLANS_KEY, JSON.stringify(plans));
+  localStorage.setItem(plansKey(), JSON.stringify(plans));
 }
 
 export function getCurrentPlanId(){
-  return localStorage.getItem(CURRENT_PLAN_KEY) || BASE_PLAN_ID;
+  return localStorage.getItem(currentPlanKey()) || BASE_PLAN_ID;
 }
 export function setCurrentPlanId(id){
-  localStorage.setItem(CURRENT_PLAN_KEY, id);
+  localStorage.setItem(currentPlanKey(), id);
 }
 export function getCurrentPlanName(){
   const id = getCurrentPlanId();
@@ -43,7 +44,8 @@ export function getCurrentPlanName(){
 // Adatkulcs-prefix az aktuális tervhez (alap-terv: üres → régi kulcsok)
 export function planPrefix(){
   const id = getCurrentPlanId();
-  return id === BASE_PLAN_ID ? '' : `${id}_`;
+  const planPart = id === BASE_PLAN_ID ? '' : `${id}_`;
+  return userPrefix() + planPart;
 }
 
 // ── Új terv ──
@@ -77,24 +79,19 @@ export function deletePlan(id){
 }
 
 function removePlanData(id){
-  const prefix = id === BASE_PLAN_ID ? '' : `${id}_`;
+  if(id === BASE_PLAN_ID) return;     // az alap-terv adatait sosem töröljük tömegesen
+  const prefix = `${userPrefix()}${id}_`;
   const toRemove = [];
   for(let i=0;i<localStorage.length;i++){
     const k = localStorage.key(i);
-    if(id === BASE_PLAN_ID) continue; // az alap-terv adatait sosem töröljük tömegesen
-    if(k.startsWith(prefix) && (k.startsWith(prefix+'w') || k.startsWith(prefix+'bw_') ||
-       k.startsWith(prefix+'date_') || k.startsWith(prefix+'note_') ||
-       k.startsWith(prefix+'struct') || k.startsWith(prefix+'dayname_') ||
-       k.startsWith(prefix+'daysub_') || k.startsWith(prefix+'exname_'))){
-      toRemove.push(k);
-    }
+    if(k.startsWith(prefix)) toRemove.push(k);
   }
   toRemove.forEach(k=>localStorage.removeItem(k));
 }
 
 // ── STRUKTÚRA (napok + gyakorlatok) ──
 // Terv-specifikus, localStorage-ban tárolva JSON-ként.
-function structKey(id){ return id === BASE_PLAN_ID ? 'struct' : `${id}_struct`; }
+function structKey(id){ return id === BASE_PLAN_ID ? `${userPrefix()}struct` : `${userPrefix()}${id}_struct`; }
 
 function loadStructure(id){
   const raw = localStorage.getItem(structKey(id));

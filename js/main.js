@@ -13,7 +13,8 @@ import {
   openWeekModal, closeWeekModal, showPage,
   openPlanMenu, closePlanMenu,
 } from './navigation.js';
-import { toggleMainMenu, exportData, importData } from './backup.js';
+import { toggleMainMenu, closeMainMenu, exportData, importData } from './backup.js';
+import { openProfile } from './profile.js';
 
 function $(id){ return document.getElementById(id); }
 
@@ -34,7 +35,8 @@ document.addEventListener('click', (e)=>{
   }
 });
 
-// ── Főmenü (export/import) ──
+// ── Főmenü (profil + export/import) ──
+document.querySelector('.mm-item[data-action="profile"]').addEventListener('click', ()=>{ closeMainMenu(); openProfile(); });
 document.querySelector('.mm-item[data-action="export"]').addEventListener('click', exportData);
 document.querySelector('.mm-item[data-action="import"]').addEventListener('click', ()=>$('importFile').click());
 $('importFile').addEventListener('change', importData);

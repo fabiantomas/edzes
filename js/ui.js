@@ -126,3 +126,11 @@ export function render(){
   updateProgress();
   updateNavBtns();
 }
+
+// Edzés-oldalra váltás (a profile.js használja a navigation körkörös import nélkül).
+export function showPageWorkout(){
+  state.currentPage = 'workout';
+  document.body.classList.remove('show-history');
+  const navBtns = document.getElementById('navBtns');
+  if(navBtns) navBtns.style.display = state.editMode ? 'none' : 'flex';
+}

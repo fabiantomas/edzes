@@ -13,7 +13,9 @@ js/
   main.js         – belépési pont: eseménykezelők + indítás
   state.js        – futásidejű állapot (egyetlen objektum)
   data.js         – az ALAP-TERV alapstruktúrája + kiindulási előzmény (BASE_HISTORY)
-  plans.js        – TÖBB EDZÉSTERV: terv-lista, aktuális terv, struktúra (napok/gyakorlatok) CRUD
+  user.js         – FELHASZNÁLÓI PROFILOK (userID): adat-izoláció user-prefixszel
+  profile.js      – profil modal (userID megtekintés, átnevezés, váltás/létrehozás)
+  plans.js        – TÖBB EDZÉSTERV: terv-lista, aktuális terv, struktúra CRUD
   storage.js      – localStorage hozzáférés (terv-prefixszel) és származtatott értékek
   names.js        – nap- és gyakorlatnevek (a struktúrából)
   ui.js           – render() koordinátor + nap-sáv + terv-cím; renderelő-regisztráció
@@ -24,6 +26,15 @@ js/
   icons.js        – inline SVG ikonok
   toast.js        – rövid visszajelzés
 ```
+
+## Felhasználói profilok (userID)
+
+A user-réteg a terv-réteg fölött áll. Minden kulcs user-prefixet kap (`{userID}__`),
+KIVÉVE az alap-usert (`u0`), amely prefix nélküli kulcsokat használ — így a korábbi
+adatok az alap-userhez tartoznak. A profil a "⋯" menü → Profil pontban érhető el:
+ott leolvasható az aktuális userID, átnevezhető a profil, és egy userID beírásával
+átválthatsz másikra (új azonosító → új, üres profil). Minden user saját tervekkel
+és adatokkal rendelkezik.
 
 ## Edzéstervek (plans)
 
