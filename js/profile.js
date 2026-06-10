@@ -28,7 +28,10 @@ export function openProfile(){
 
         <div class="profile-section">
           <div class="profile-label">Jelenlegi profil azonosító (userID)</div>
-          <div class="profile-id" id="profileCurrentId"></div>
+          <div class="profile-id-row">
+            <div class="profile-id" id="profileCurrentId"></div>
+            <button class="profile-copy" id="profileCopyBtn">Másolás</button>
+          </div>
         </div>
 
         <div class="profile-section">
@@ -72,6 +75,19 @@ export function openProfile(){
       render();
       refreshProfile();
       showToast('Új profil: ' + getCurrentUserName());
+    });
+    modal.querySelector('#profileCopyBtn').addEventListener('click', async ()=>{
+      const id = getCurrentUserId();
+      try{
+        if(navigator.clipboard && navigator.clipboard.writeText){
+          await navigator.clipboard.writeText(id);
+        } else {
+          const ta = document.createElement('textarea');
+          ta.value = id; document.body.appendChild(ta); ta.select();
+          document.execCommand('copy'); document.body.removeChild(ta);
+        }
+        showToast('Azonosító másolva');
+      }catch(e){ showToast('Másolás nem sikerült'); }
     });
     modal.querySelector('#profileSwitchInput').addEventListener('keydown', (e)=>{
       if(e.key === 'Enter'){ doSwitch(e.target.value); }

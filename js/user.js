@@ -12,13 +12,19 @@ const USERS_KEY = 'users';            // [{id, name}]
 const CURRENT_USER_KEY = 'currentUser';
 
 // ── Egyedi ID generálása ──
+// Szándékosan kerüljük a vizuálisan összetéveszthető karaktereket (0/O, 1/l/I),
+// hogy kézi beírásnál ne legyen hiba.
+const ID_ALPHABET = '23456789abcdefghjkmnpqrstuvwxyz'; // nincs 0,1,i,l,o
 function generateUserId(){
-  // időbélyeg + véletlen, base36 — rövid, olvasható, ütközésmentes a gyakorlatban
-  const rnd = (typeof crypto !== 'undefined' && crypto.getRandomValues)
-    ? Array.from(crypto.getRandomValues(new Uint8Array(4))).map(b=>b.toString(36)).join('')
-    : Math.random().toString(36).slice(2, 10);
-  const ts = Date.now().toString(36).slice(-4);
-  return ('u_' + ts + rnd).replace(/[^a-z0-9_]/gi,'').slice(0, 16);
+  let rnd = '';
+  const len = 10;
+  if(typeof crypto !== 'undefined' && crypto.getRandomValues){
+    const arr = crypto.getRandomValues(new Uint8Array(len));
+    for(let i=0;i<len;i++) rnd += ID_ALPHABET[arr[i] % ID_ALPHABET.length];
+  } else {
+    for(let i=0;i<len;i++) rnd += ID_ALPHABET[Math.floor(Math.random()*ID_ALPHABET.length)];
+  }
+  return 'u_' + rnd;
 }
 
 // ── User-lista ──
