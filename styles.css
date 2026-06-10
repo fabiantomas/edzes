@@ -557,10 +557,11 @@ body{
   transition:background .25s, transform .12s, padding .25s;
 }
 .btn-save-day:active{transform:scale(.92);}
-.btn-prev-ex svg,.btn-save-day svg{display:block;}
+.btn-prev-ex svg{display:block;}
+.btn-save-day .save-icon{display:block;}
 .btn-save-day .save-check{display:none;}
 .btn-save-day .save-label{display:none;}
-/* mentés utáni visszajelzés: zöldre vált, pipa + "Mentve" felirat ~1.2 mp-ig */
+/* mentés utáni visszajelzés: zöldre vált, pipa + "Mentve" felirat ~1.4 mp-ig */
 .btn-save-day.saved{background:var(--accent);animation:savePulse .6s ease;}
 .btn-save-day.saved .save-icon{display:none;}
 .btn-save-day.saved .save-check{display:block;}
