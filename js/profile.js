@@ -133,6 +133,7 @@ function doSwitch(rawId){
   render();
   closeProfile();
   showToast('Profil: ' + getCurrentUserName());
+  window.dispatchEvent(new Event('profilechanged'));
 }
 
 function resetStateForNewUser(){

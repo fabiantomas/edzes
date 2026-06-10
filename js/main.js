@@ -15,6 +15,7 @@ import {
 } from './navigation.js';
 import { toggleMainMenu, closeMainMenu, exportData, importData } from './backup.js';
 import { openProfile } from './profile.js';
+import { syncNow } from './sync.js';
 
 function $(id){ return document.getElementById(id); }
 
@@ -54,3 +55,36 @@ $('weekModalClose').addEventListener('click', ()=>closeWeekModal());
 loadDayIntoWorking();
 render();
 showPage('workout');
+
+// ── Szinkronizáció ──
+async function runSync(){
+  const dot = document.getElementById('syncDot');
+  if(dot){ dot.classList.remove('ok','err'); dot.classList.add('syncing'); }
+  const res = await syncNow();
+  if(res.ok && res.changed){
+    loadDayIntoWorking();
+    render();
+  }
+  updateSyncIndicator(res);
+}
+function updateSyncIndicator(res){
+  const el = document.getElementById('syncDot');
+  if(!el) return;
+  el.classList.remove('syncing','ok','err');
+  if(res && res.ok) el.classList.add('ok');
+  else el.classList.add('err');
+}
+
+// indításkor
+runSync();
+// visszatéréskor / ha újra online
+window.addEventListener('online', runSync);
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) runSync(); });
+// profilváltás / import után
+window.addEventListener('profilechanged', runSync);
+// kézi szinkron a pöttyre kattintva
+const syncDotEl = $('syncDot');
+if(syncDotEl) syncDotEl.addEventListener('click', (e)=>{ e.stopPropagation(); runSync(); });
+// időzített háttér-szinkron (2 percenként, ha aktív)
+setInterval(()=>{ if(!document.hidden) runSync(); }, 120000);
+

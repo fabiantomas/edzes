@@ -7,6 +7,7 @@
 import { BASE_HISTORY, MAX_WEEKS } from './data.js';
 import { state } from './state.js';
 import { getDays, planPrefix, getCurrentPlanId, BASE_PLAN_ID } from './plans.js';
+import { trackedSet, trackedRemove } from './synced-store.js';
 
 // ── Kulcsképzés (terv-prefixszel) ──
 function wKey(d,e,s,f){ return `${d}_${e}_${s}_${f}`; }
@@ -27,21 +28,23 @@ export function getStored(w,d,e,s,f){
   return v !== null ? parseFloat(v) : null;
 }
 export function setStored(w,d,e,s,f,val){
-  localStorage.setItem(lsKey(w,d,e,s,f), val);
+  trackedSet(lsKey(w,d,e,s,f), String(val));
 }
 
 // ── Komment hét+nap+gyakorlathoz ──
 function noteKey(w,d,e){ return `${planPrefix()}note_w${w}_d${d}_e${e}`; }
 export function getNote(w,d,e){ return localStorage.getItem(noteKey(w,d,e)) || ''; }
 export function setNote(w,d,e,txt){
-  txt && txt.trim() ? localStorage.setItem(noteKey(w,d,e), txt) : localStorage.removeItem(noteKey(w,d,e));
+  const k = noteKey(w,d,e);
+  txt && txt.trim() ? trackedSet(k, txt) : trackedRemove(k);
 }
 
 // ── Dátum hét+naphoz ──
 function dateKey(w,d){ return `${planPrefix()}date_w${w}_d${d}`; }
 export function getWorkoutDate(w,d){ return localStorage.getItem(dateKey(w,d)); } // YYYY-MM-DD vagy null
 export function setWorkoutDate(w,d,iso){
-  iso ? localStorage.setItem(dateKey(w,d),iso) : localStorage.removeItem(dateKey(w,d));
+  const k = dateKey(w,d);
+  iso ? trackedSet(k, iso) : trackedRemove(k);
 }
 export function todayISO(){
   const t = new Date();
@@ -61,9 +64,10 @@ export function getBodyweight(w,d){
   return v !== null ? parseFloat(v) : null;
 }
 export function setBodyweight(w,d,val){
+  const k = bwKey(w,d);
   (val !== null && val !== '' && !isNaN(val))
-    ? localStorage.setItem(bwKey(w,d),val)
-    : localStorage.removeItem(bwKey(w,d));
+    ? trackedSet(k, String(val))
+    : trackedRemove(k);
 }
 // Minden rögzített testsúly időrendben (aktuális terv): [{iso, weight, w, d}]
 export function allBodyweights(){

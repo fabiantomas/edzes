@@ -9,6 +9,7 @@
 import { DEFAULT_STRUCTURE, DEFAULT_SETS } from './data.js';
 import { state } from './state.js';
 import { userPrefix } from './user.js';
+import { trackedSet } from './synced-store.js';
 
 const BASE_PLAN_ID = 'p0';            // alap-terv: nincs terv-prefix
 function plansKey(){ return `${userPrefix()}plans`; }
@@ -22,11 +23,11 @@ export function getPlans(){
   }
   // alapértelmezett: egyetlen alap-terv
   const def = [{ id: BASE_PLAN_ID, name: 'Alap terv' }];
-  localStorage.setItem(plansKey(), JSON.stringify(def));
+  trackedSet(plansKey(), JSON.stringify(def));
   return def;
 }
 function savePlans(plans){
-  localStorage.setItem(plansKey(), JSON.stringify(plans));
+  trackedSet(plansKey(), JSON.stringify(plans));
 }
 
 export function getCurrentPlanId(){
@@ -108,7 +109,7 @@ function loadStructure(id){
   return [];
 }
 function saveStructureFor(id, struct){
-  localStorage.setItem(structKey(id), JSON.stringify(struct));
+  trackedSet(structKey(id), JSON.stringify(struct));
 }
 
 // Az aktuális terv struktúrája (élő olvasás)

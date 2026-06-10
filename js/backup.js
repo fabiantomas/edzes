@@ -81,6 +81,8 @@ export function importData(e){
       showPage('workout');
       closeMainMenu();
       showToast('Adatok visszatöltve');
+      // import után szinkronizáljunk (a main.js kezeli az eseményt)
+      window.dispatchEvent(new Event('profilechanged'));
     }catch(err){
       alert('Nem sikerült beolvasni a fájlt. Biztosan a megfelelő mentést választottad?');
     }

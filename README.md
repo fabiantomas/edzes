@@ -23,9 +23,43 @@ js/
   history.js      – statisztika (táblázatok, testsúly-grafikon, komment tooltip)
   navigation.js   – szerkesztő mód, oldalváltás, nap/hét/TERV választás
   backup.js       – export / import + főmenü
+  sync-config.js  – Supabase URL + anon kulcs + beállítások
+  synced-store.js – követett írások (időbélyeg + "piszkos" jelölés a szinkronhoz)
+  sync.js         – felhő-szinkron (Supabase REST, last-write-wins mezőnként)
   icons.js        – inline SVG ikonok
   toast.js        – rövid visszajelzés
 ```
+
+## Felhő-szinkronizáció (Supabase)
+
+Local-first modell: a localStorage az elsődleges (offline is működik), a Supabase a
+közös felhő. Minden szinkronizálandó íráshoz időbélyeg és "piszkos" jelölés tartozik.
+
+- **PULL** indításkor / fókuszkor / 2 percenként / kézzel (a fejléc pöttyére kattintva).
+- **MERGE** kulcsonként: a frissebb időbélyeg nyer (last-write-wins). Távoli frissebb →
+  helyben alkalmazzuk; helyi frissebb/piszkos → felküldjük.
+- Csak az aktuális userID sorai szinkronizálódnak.
+- Offline: a szinkron csendben kimarad, a piszkos kulcsok a következő sikeres
+  szinkronig megmaradnak. Az edzés offline is rögzíthető.
+
+A fejléc jobb felső pöttye jelzi az állapotot: zöld = sikeres, kék = épp szinkronizál,
+narancs = hiba/offline. Rákoppintva kézi szinkron indul.
+
+### Supabase tábla (egyszeri beállítás, SQL Editorban)
+
+```sql
+create table public.sync_data (
+  user_id text not null, key text not null, value text,
+  updated_at bigint not null, deleted boolean not null default false,
+  primary key (user_id, key)
+);
+alter table public.sync_data enable row level security;
+create policy "anon olvas"   on public.sync_data for select using (true);
+create policy "anon beszur"  on public.sync_data for insert with check (true);
+create policy "anon modosit" on public.sync_data for update using (true);
+```
+
+A kulcsokat a `sync-config.js` tartalmazza (az anon kulcs publikus, szándékosan).
 
 ## Felhasználói profilok (userID)
 
