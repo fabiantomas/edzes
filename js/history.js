@@ -12,6 +12,7 @@ import {
 } from './storage.js';
 import { getDayName, getExName } from './names.js';
 import { registerRenderer } from './ui.js';
+import { renderProgress } from './progress.js';
 
 // ── Testsúly szekció (lista + vonaldiagram) ──
 function buildBodyweightSection(){
@@ -122,6 +123,29 @@ function buildBwChart(data){
 function doRenderHistory(){
   const page = document.getElementById('historyPage');
   page.innerHTML = '';
+
+  // fül-kapcsoló: Táblázat / Fejlődés
+  const tabs = document.createElement('div');
+  tabs.className = 'hist-tabs';
+  const tabTable = document.createElement('button');
+  tabTable.className = 'hist-tab' + (state.historyTab==='table' ? ' active' : '');
+  tabTable.textContent = 'Táblázat';
+  tabTable.onclick = ()=>{ state.historyTab='table'; doRenderHistory(); };
+  const tabProg = document.createElement('button');
+  tabProg.className = 'hist-tab' + (state.historyTab==='progress' ? ' active' : '');
+  tabProg.textContent = 'Fejlődés';
+  tabProg.onclick = ()=>{ state.historyTab='progress'; doRenderHistory(); };
+  tabs.appendChild(tabTable);
+  tabs.appendChild(tabProg);
+  page.appendChild(tabs);
+
+  if(state.historyTab === 'progress'){
+    const pgWrap = document.createElement('div');
+    pgWrap.className = 'pg-root';
+    page.appendChild(pgWrap);
+    renderProgress(pgWrap);
+    return;
+  }
 
   // testsúly legfelül
   page.appendChild(buildBodyweightSection());

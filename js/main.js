@@ -16,6 +16,7 @@ import {
 import { toggleMainMenu, closeMainMenu, exportData, importData } from './backup.js';
 import { openProfile } from './profile.js';
 import { syncNow } from './sync.js';
+import { exportDetailedCsv, exportSummaryCsv } from './csv.js';
 
 function $(id){ return document.getElementById(id); }
 
@@ -40,12 +41,22 @@ document.addEventListener('click', (e)=>{
 document.querySelector('.mm-item[data-action="profile"]').addEventListener('click', ()=>{ closeMainMenu(); openProfile(); });
 document.querySelector('.mm-item[data-action="export"]').addEventListener('click', exportData);
 document.querySelector('.mm-item[data-action="import"]').addEventListener('click', ()=>$('importFile').click());
+document.querySelector('.mm-item[data-action="csv-detailed"]').addEventListener('click', ()=>{ exportDetailedCsv(); closeMainMenu(); });
+document.querySelector('.mm-item[data-action="csv-summary"]').addEventListener('click', ()=>{ exportSummaryCsv(); closeMainMenu(); });
 $('importFile').addEventListener('change', importData);
 
 // ── Lenti gombok ──
 $('btnPrevEx').addEventListener('click', ()=>goEx(-1));
 $('btnNextEx').addEventListener('click', ()=>goEx(1));
-$('btnSaveDay').addEventListener('click', ()=>saveDay());
+$('btnSaveDay').addEventListener('click', ()=>{
+  const saved = saveDay();
+  const btn = $('btnSaveDay');
+  // látható visszajelzés: pipa + zöld villanás
+  btn.classList.remove('saved');     // újraindításhoz
+  void btn.offsetWidth;              // reflow, hogy az animáció újrainduljon
+  btn.classList.add('saved');
+  setTimeout(()=>btn.classList.remove('saved'), 1100);
+});
 
 // ── Hét modal háttér ──
 $('weekModal').addEventListener('click', closeWeekModal);

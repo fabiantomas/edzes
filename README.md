@@ -22,7 +22,9 @@ js/
   workout.js      – edzés nézet (pillek, kártyák, húzós bevitel, komment modal, szerkesztő-lista, mentés)
   history.js      – statisztika (táblázatok, testsúly-grafikon, komment tooltip)
   navigation.js   – szerkesztő mód, oldalváltás, nap/hét/TERV választás
-  backup.js       – export / import + főmenü
+  backup.js       – export / import (JSON) + főmenü
+  csv.js          – CSV export (részletes és összesített)
+  progress.js     – fejlődés-grafikonok (össztérfogat, max súly, becsült 1RM)
   sync-config.js  – Supabase URL + anon kulcs + beállítások
   synced-store.js – követett írások (időbélyeg + "piszkos" jelölés a szinkronhoz)
   sync.js         – felhő-szinkron (Supabase REST, last-write-wins mezőnként)

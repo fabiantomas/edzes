@@ -548,12 +548,25 @@ body{
 }
 .btn-next-ex:active{transform:scale(.97);opacity:.85;}
 .btn-save-day{
+  position:relative;
   background:var(--blue);color:#0d0d10;
   border:none;border-radius:12px;padding:14px 18px;
   cursor:pointer;flex-shrink:0;
   display:flex;align-items:center;justify-content:center;
+  transition:background .2s, transform .12s;
 }
+.btn-save-day:active{transform:scale(.92);}
 .btn-prev-ex svg,.btn-save-day svg{display:block;}
+.btn-save-day .save-check{display:none;}
+/* mentés utáni visszajelzés: zöldre vált, pipa villan, rövid pulzálás */
+.btn-save-day.saved{background:var(--accent);animation:savePulse .5s ease;}
+.btn-save-day.saved .save-icon{display:none;}
+.btn-save-day.saved .save-check{display:block;}
+@keyframes savePulse{
+  0%{box-shadow:0 0 0 0 var(--accent);}
+  60%{box-shadow:0 0 0 10px rgba(184,255,87,0);}
+  100%{box-shadow:0 0 0 0 rgba(184,255,87,0);}
+}
 
 /* ── HISTORY PAGE ── */
 .history-page{
@@ -564,6 +577,50 @@ body{
   display:flex;flex-direction:column;gap:16px;
   background:var(--bg);
 }
+/* ── STATISZTIKA FÜLEK ── */
+.hist-tabs{
+  display:flex;gap:6px;background:var(--surface);
+  border:1px solid var(--border);border-radius:11px;padding:4px;
+}
+.hist-tab{
+  flex:1;background:transparent;border:none;
+  color:var(--muted);font-family:inherit;font-size:14px;font-weight:600;
+  padding:9px;border-radius:8px;cursor:pointer;transition:all .15s;
+}
+.hist-tab.active{background:var(--accent);color:#0d0d10;}
+
+/* ── FEJLŐDÉS NÉZET ── */
+.pg-root{display:flex;flex-direction:column;gap:18px;}
+.pg-section{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:14px;padding:14px;
+}
+.pg-title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px;}
+.pg-subtitle{font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px;}
+.pg-hint{font-size:11px;color:var(--muted);line-height:1.4;margin-bottom:10px;}
+.pg-picker{display:flex;gap:8px;}
+.pg-select{
+  flex:1;min-width:0;background:var(--card);border:1.5px solid var(--border);
+  border-radius:9px;padding:9px 10px;color:var(--text);
+  font-family:inherit;font-size:14px;font-weight:600;
+  -webkit-appearance:none;appearance:none;cursor:pointer;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23777' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;
+}
+.pg-select:focus{border-color:var(--accent);outline:none;}
+.pg-chart-wrap{margin-top:4px;}
+.pg-chart{display:block;width:100%;height:auto;}
+.pg-grid{stroke:var(--border);stroke-width:1;}
+.pg-axis{fill:var(--muted);font-size:9px;}
+.pg-area{fill:var(--accent-dim);}
+.pg-line{fill:none;stroke:var(--accent);stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round;}
+.pg-dot{fill:var(--accent);}
+.pg-empty{font-size:13px;color:var(--muted);text-align:center;padding:20px 8px;}
+.pg-delta{font-size:13px;color:var(--muted);margin-top:8px;text-align:center;}
+.pg-delta b{color:var(--text);}
+.pg-delta .up{color:var(--accent);font-weight:700;}
+.pg-delta .down{color:#e88;font-weight:700;}
+
 .hist-section-title{
   font-size:13px;font-weight:700;color:var(--muted);
   text-transform:uppercase;letter-spacing:.06em;
