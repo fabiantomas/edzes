@@ -37,7 +37,7 @@ $('importFile').addEventListener('change', importData);
 // ── Lenti gombok ──
 $('btnPrevEx').addEventListener('click', ()=>goEx(-1));
 $('btnNextEx').addEventListener('click', ()=>goEx(1));
-$('btnSaveDay').addEventListener('click', saveDay);
+$('btnSaveDay').addEventListener('click', ()=>saveDay());
 
 // ── Hét modal háttér ──
 $('weekModal').addEventListener('click', closeWeekModal);

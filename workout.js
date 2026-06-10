@@ -15,6 +15,7 @@ import { getExName, setExName } from './names.js';
 import { ICON_DUMBBELL_SM, ICON_CHEVRON_UP, ICON_CHEVRON_DOWN } from './icons.js';
 import { showToast } from './toast.js';
 import { registerRenderer, renderExNav, renderSlides, updateNavBtns, updateProgress } from './ui.js';
+import { exportData } from './backup.js';
 
 // ── Gyakorlat-sáv (pill-ek) ──
 function doRenderExNav(){
@@ -352,6 +353,11 @@ function applyVal(ei,s,f,val,silent=false){
 export function goEx(dir){
   const exes = DAYS[state.currentDay].exercises.length;
   const prev = state.currentEx;
+  // Az utolsó gyakorlatnál a "Kész" (előre lépés) befejezi a napot
+  if(dir > 0 && state.currentEx === exes-1){
+    finishDay();
+    return;
+  }
   state.currentEx = Math.max(-1, Math.min(exes-1, state.currentEx+dir));
   if(state.currentEx !== prev){
     renderSlides();
@@ -392,7 +398,7 @@ function doUpdateProgress(){
 }
 
 // ── Mentés ──
-export function saveDay(){
+export function saveDay(silent=false){
   const day = DAYS[state.currentDay];
   let savedAny = false;
   day.exercises.forEach((ex,ei)=>{
@@ -406,8 +412,19 @@ export function saveDay(){
   if(savedAny && !getWorkoutDate(state.currentWeek,state.currentDay)){
     setWorkoutDate(state.currentWeek,state.currentDay,todayISO());
   }
+  if(!silent){
+    const d = getWorkoutDate(state.currentWeek,state.currentDay);
+    showToast(d ? `Mentve – ${fmtDate(d)}` : 'Mentve');
+  }
+  return savedAny;
+}
+
+// ── Nap befejezése: mentés + biztonsági export fájlba ──
+export function finishDay(){
+  saveDay(true);                 // némán ment
+  exportData();                  // letölti a teljes biztonsági mentést
   const d = getWorkoutDate(state.currentWeek,state.currentDay);
-  showToast(d ? `Mentve – ${fmtDate(d)}` : 'Mentve');
+  showToast(d ? `Kész – mentve és exportálva (${fmtDate(d)})` : 'Kész – mentve és exportálva');
 }
 
 // Renderelők regisztrálása az UI koordinátorba
