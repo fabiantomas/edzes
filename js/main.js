@@ -1,8 +1,7 @@
 // ════════════════════════════════════════════
 //  BELÉPÉSI PONT
 // ════════════════════════════════════════════
-// Itt kötjük be az eseménykezelőket (az inline onclick helyett, mert
-// ES modulok hatóköre nem globális), és indítjuk az appot.
+// Eseménykezelők bekötése (az inline onclick helyett) és az app indítása.
 
 import { loadDayIntoWorking } from './storage.js';
 import { render } from './ui.js';
@@ -10,8 +9,9 @@ import './workout.js';   // renderelők regisztrálása
 import './history.js';   // renderelők regisztrálása
 import { goEx, saveDay } from './workout.js';
 import {
-  toggleEdit, togglePage, toggleDayMenu, selectDay,
+  toggleEdit, togglePage, toggleDayMenu,
   openWeekModal, closeWeekModal, showPage,
+  openPlanMenu, closePlanMenu,
 } from './navigation.js';
 import { toggleMainMenu, exportData, importData } from './backup.js';
 
@@ -24,9 +24,14 @@ $('btnHistory').addEventListener('click', togglePage);
 $('btnMenu').addEventListener('click', toggleMainMenu);
 $('weekPill').addEventListener('click', openWeekModal);
 
-// ── Napválasztó gombok ──
-document.querySelectorAll('#dayBar .day-btn').forEach((b,i)=>{
-  b.addEventListener('click', ()=>selectDay(i));
+// ── Terv választó ──
+$('planSwitch').addEventListener('click', openPlanMenu);
+// kattintás máshova → terv-menü zárása
+document.addEventListener('click', (e)=>{
+  const sw = $('planSwitch'), menu = $('planMenu');
+  if(menu && menu.classList.contains('open') && !menu.contains(e.target) && !sw.contains(e.target)){
+    closePlanMenu();
+  }
 });
 
 // ── Főmenü (export/import) ──

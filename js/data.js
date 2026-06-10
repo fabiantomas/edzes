@@ -1,33 +1,33 @@
 // ════════════════════════════════════════════
-//  STATIKUS ADATOK
+//  STATIKUS ALAPADATOK
 // ════════════════════════════════════════════
 
-// Az edzésnapok és gyakorlatok alapstruktúrája.
-// A nevek itt megadott formái szolgálnak kulcsként a BASE_HISTORY-hoz;
-// a megjelenített nevek a szerkesztővel felülírhatók (lásd names.js).
-export const DAYS = [
-  { name:'Felső 1', exercises:[
+// Az ALAP-TERV (p0) kiinduló struktúrája. Ez akkor érvényes, ha még nincs
+// mentett struktúra. A felhasználó az appból módosíthatja (plans.js), onnantól
+// a mentett struktúra él. Az itteni nevek szolgálnak a BASE_HISTORY kulcsaként.
+export const DEFAULT_STRUCTURE = [
+  { name:'Felső 1', sub:'Mell/Hát', exercises:[
     {name:'Tricepsz fej fölött kötéllel', sets:2},
     {name:'Húzódzkodás', sets:2},
     {name:'15 fok KS Mell', sets:2},
     {name:'KS Bicepsz', sets:2},
     {name:'Felső Evezés', sets:2},
   ]},
-  { name:'Alsó 1', exercises:[
+  { name:'Alsó 1', sub:'Combok', exercises:[
     {name:'Comb Hajtás', sets:2},
     {name:'Lábtolás', sets:2},
     {name:'Csípő Nyitás', sets:2},
     {name:'BootyBuilder', sets:2},
     {name:'Vádli', sets:2},
   ]},
-  { name:'Felső 2', exercises:[
+  { name:'Felső 2', sub:'Váll/Kar', exercises:[
     {name:'Tricepsz Letolás', sets:2},
     {name:'Széles Evezés', sets:2},
     {name:'Tárogatás', sets:2},
     {name:'KS Kalapács', sets:2},
     {name:'Válból Nyomás', sets:2},
   ]},
-  { name:'Alsó 2', exercises:[
+  { name:'Alsó 2', sub:'Csípő', exercises:[
     {name:'Csípőtolás', sets:2},
     {name:'Comb nyújtás', sets:2},
     {name:'Csípő Zárás', sets:2},
@@ -36,7 +36,7 @@ export const DAYS = [
   ]},
 ];
 
-// Az 1. hét kiindulási előzménye: [súly, ismétlés] sorozatonként.
+// Az 1. hét kiindulási előzménye az ALAP-TERVHEZ: [súly, ismétlés] sorozatonként.
 export const BASE_HISTORY = {
   'Tricepsz fej fölött kötéllel':[[65,10],[65,7]],
   'Húzódzkodás':[[95,8],[95,7]],
@@ -60,5 +60,5 @@ export const BASE_HISTORY = {
   'Comb Nyomás':[[125,10],[125,10]],
 };
 
-export const DAY_SUBS = ['Mell/Hát','Combok','Váll/Kar','Csípő'];
+export const DEFAULT_SETS = 2;
 export const MAX_WEEKS = 20;

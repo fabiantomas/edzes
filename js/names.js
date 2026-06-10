@@ -1,29 +1,32 @@
 // ════════════════════════════════════════════
-//  NEVEK (szerkeszthető nap- és gyakorlatnevek)
+//  NEVEK
 // ════════════════════════════════════════════
-// Az eredeti neveket (data.js) használjuk kulcsként a BASE_HISTORY-hoz,
-// a megjelenített nevek itt felülírhatók és localStorage-ban tárolódnak.
+// A nevek mostantól közvetlenül a terv struktúrájában tárolódnak
+// (lásd plans.js). Ezek a függvények kényelmi olvasók/írók a struktúrához.
 
-import { DAYS, DAY_SUBS } from './data.js';
-
-function dayNameKey(di){ return `dayname_${di}`; }
-function exNameKey(di,ei){ return `exname_${di}_${ei}`; }
+import { getStructure, saveStructure } from './plans.js';
 
 export function getDayName(di){
-  return localStorage.getItem(dayNameKey(di)) || DAYS[di].name;
+  const s = getStructure();
+  return s[di] ? s[di].name : '';
 }
 export function getDaySub(di){
-  return localStorage.getItem(`daysub_${di}`) || DAY_SUBS[di] || '';
+  const s = getStructure();
+  return s[di] ? (s[di].sub || '') : '';
 }
 export function getExName(di,ei){
-  return localStorage.getItem(exNameKey(di,ei)) || DAYS[di].exercises[ei].name;
+  const s = getStructure();
+  return (s[di] && s[di].exercises[ei]) ? s[di].exercises[ei].name : '';
 }
 export function setDayName(di,v){
-  v.trim() ? localStorage.setItem(dayNameKey(di),v.trim()) : localStorage.removeItem(dayNameKey(di));
+  const s = getStructure();
+  if(s[di]){ s[di].name = v.trim() || s[di].name; saveStructure(s); }
 }
 export function setDaySub(di,v){
-  v.trim() ? localStorage.setItem(`daysub_${di}`,v.trim()) : localStorage.removeItem(`daysub_${di}`);
+  const s = getStructure();
+  if(s[di]){ s[di].sub = v.trim(); saveStructure(s); }
 }
 export function setExName(di,ei,v){
-  v.trim() ? localStorage.setItem(exNameKey(di,ei),v.trim()) : localStorage.removeItem(exNameKey(di,ei));
+  const s = getStructure();
+  if(s[di] && s[di].exercises[ei]){ s[di].exercises[ei].name = v.trim() || s[di].exercises[ei].name; saveStructure(s); }
 }

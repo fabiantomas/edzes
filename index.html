@@ -11,6 +11,16 @@
 </head>
 <body>
 
+<!-- TERV VÁLASZTÓ (legfelső szint) -->
+<div class="plan-switch" id="planSwitch">
+  <span class="plan-label">Terv:</span>
+  <span class="plan-current" id="planName">Alap terv</span>
+  <svg class="plan-chev" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+</div>
+
+<!-- TERV MENÜ (lenyíló) -->
+<div class="plan-menu" id="planMenu"></div>
+
 <!-- TOP (sticky minimal) -->
 <div class="topbar">
   <div class="week-pill" id="weekPill">1. hét</div>
@@ -43,12 +53,7 @@
 
 <!-- DAY DROPDOWN (rejtve, cím alatt nyílik) -->
 <div class="day-menu" id="dayMenu">
-  <div class="day-bar" id="dayBar">
-    <div class="day-btn active"><span class="dl" data-di="0">Felső 1</span><span class="ds">Mell/Hát</span></div>
-    <div class="day-btn"><span class="dl" data-di="1">Alsó 1</span><span class="ds">Combok</span></div>
-    <div class="day-btn"><span class="dl" data-di="2">Felső 2</span><span class="ds">Váll/Kar</span></div>
-    <div class="day-btn"><span class="dl" data-di="3">Alsó 2</span><span class="ds">Csípő</span></div>
-  </div>
+  <div class="day-bar" id="dayBar"></div>
 </div>
 
 <!-- PROGRESS -->

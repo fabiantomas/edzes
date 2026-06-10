@@ -1,13 +1,16 @@
 // ════════════════════════════════════════════
 //  TÁROLÁS (localStorage) ÉS SZÁRMAZTATOTT ÉRTÉKEK
 // ════════════════════════════════════════════
+// Minden adatkulcs az aktuális terv prefixét kapja (planPrefix). Az alap-terv
+// prefixe üres, így a korábban rögzített adatok változatlan kulcson maradnak.
 
-import { DAYS, BASE_HISTORY, MAX_WEEKS } from './data.js';
+import { BASE_HISTORY, MAX_WEEKS } from './data.js';
 import { state } from './state.js';
+import { getDays, planPrefix, getCurrentPlanId, BASE_PLAN_ID } from './plans.js';
 
-// ── Kulcsképzés ──
+// ── Kulcsképzés (terv-prefixszel) ──
 function wKey(d,e,s,f){ return `${d}_${e}_${s}_${f}`; }
-function lsKey(w,d,e,s,f){ return `w${w}_d${d}_e${e}_s${s}_${f}`; }
+function lsKey(w,d,e,s,f){ return `${planPrefix()}w${w}_d${d}_e${e}_s${s}_${f}`; }
 
 // ── Munkaértékek (mentés előtti, memóriában) ──
 export function getWorking(d,e,s,f){
@@ -28,14 +31,14 @@ export function setStored(w,d,e,s,f,val){
 }
 
 // ── Komment hét+nap+gyakorlathoz ──
-function noteKey(w,d,e){ return `note_w${w}_d${d}_e${e}`; }
+function noteKey(w,d,e){ return `${planPrefix()}note_w${w}_d${d}_e${e}`; }
 export function getNote(w,d,e){ return localStorage.getItem(noteKey(w,d,e)) || ''; }
 export function setNote(w,d,e,txt){
   txt && txt.trim() ? localStorage.setItem(noteKey(w,d,e), txt) : localStorage.removeItem(noteKey(w,d,e));
 }
 
 // ── Dátum hét+naphoz ──
-function dateKey(w,d){ return `date_w${w}_d${d}`; }
+function dateKey(w,d){ return `${planPrefix()}date_w${w}_d${d}`; }
 export function getWorkoutDate(w,d){ return localStorage.getItem(dateKey(w,d)); } // YYYY-MM-DD vagy null
 export function setWorkoutDate(w,d,iso){
   iso ? localStorage.setItem(dateKey(w,d),iso) : localStorage.removeItem(dateKey(w,d));
@@ -52,7 +55,7 @@ export function fmtDate(iso){
 }
 
 // ── Testsúly hét+naphoz ──
-function bwKey(w,d){ return `bw_w${w}_d${d}`; }
+function bwKey(w,d){ return `${planPrefix()}bw_w${w}_d${d}`; }
 export function getBodyweight(w,d){
   const v = localStorage.getItem(bwKey(w,d));
   return v !== null ? parseFloat(v) : null;
@@ -62,11 +65,12 @@ export function setBodyweight(w,d,val){
     ? localStorage.setItem(bwKey(w,d),val)
     : localStorage.removeItem(bwKey(w,d));
 }
-// Minden rögzített testsúly időrendben: [{iso, weight, w, d}]
+// Minden rögzített testsúly időrendben (aktuális terv): [{iso, weight, w, d}]
 export function allBodyweights(){
   const out = [];
+  const days = getDays();
   for(let w=1;w<=MAX_WEEKS;w++){
-    for(let d=0;d<DAYS.length;d++){
+    for(let d=0;d<days.length;d++){
       const bw = getBodyweight(w,d);
       if(bw !== null){
         const iso = getWorkoutDate(w,d) || '';
@@ -74,7 +78,6 @@ export function allBodyweights(){
       }
     }
   }
-  // dátum szerint növekvő; dátum nélküliek a végére
   out.sort((a,b)=>{
     if(!a.iso && !b.iso) return 0;
     if(!a.iso) return 1;
@@ -87,18 +90,23 @@ export function allBodyweights(){
 // ── Származtatott értékek ──
 
 // Az "előző" érték: a legutóbbi hét, ahol ehhez a sorozathoz volt bejegyzés.
-// A súly és ismétlés ugyanabból az edzésből származik. Ha nincs korábbi adat,
-// a kiindulási előzményre (BASE_HISTORY) esik vissza, sorozatonként.
+// Súly és ismétlés ugyanabból az edzésből. Ha nincs korábbi adat, az alap-tervnél
+// a BASE_HISTORY-ra esik vissza (más terveknél nincs ilyen → null).
 export function getPrev(d,e,s,f){
   for(let w=state.currentWeek-1; w>=1; w--){
     if(getStored(w,d,e,s,'kg') !== null || getStored(w,d,e,s,'reps') !== null){
       return getStored(w,d,e,s,f);
     }
   }
-  const ex = DAYS[d].exercises[e];
-  const base = BASE_HISTORY[ex.name];
-  if(!base || !base[s]) return null;
-  return f==='kg' ? base[s][0] : base[s][1];
+  if(getCurrentPlanId() === BASE_PLAN_ID){
+    const days = getDays();
+    const ex = days[d] && days[d].exercises[e];
+    if(ex){
+      const base = BASE_HISTORY[ex.name];
+      if(base && base[s]) return f==='kg' ? base[s][0] : base[s][1];
+    }
+  }
+  return null;
 }
 
 // Aktuális érték: munkaérték > mentett (aktuális hét) > null
@@ -111,7 +119,9 @@ export function getCurrent(d,e,s,f){
 // Az aktuális nap mentett értékeit betölti a munkaértékek közé
 export function loadDayIntoWorking(){
   state.workingVals = {};
-  const day = DAYS[state.currentDay];
+  const days = getDays();
+  const day = days[state.currentDay];
+  if(!day) return;
   day.exercises.forEach((ex,ei)=>{
     for(let s=0;s<ex.sets;s++){
       ['kg','reps'].forEach(f=>{

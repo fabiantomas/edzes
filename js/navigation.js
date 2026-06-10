@@ -1,14 +1,16 @@
 // ════════════════════════════════════════════
-//  NAVIGÁCIÓ (szerkesztő mód, oldalváltás, nap/hét)
+//  NAVIGÁCIÓ (szerkesztő mód, oldalváltás, nap/hét/terv)
 // ════════════════════════════════════════════
 
 import { MAX_WEEKS } from './data.js';
 import { state } from './state.js';
 import { loadDayIntoWorking } from './storage.js';
-import { getDayName, getDaySub, setDayName, setDaySub } from './names.js';
-import { ICON_PENCIL, ICON_CHECK, ICON_CHART, ICON_DUMBBELL } from './icons.js';
+import {
+  getPlans, getCurrentPlanId, setCurrentPlanId, createPlan, deletePlan,
+} from './plans.js';
+import { ICON_PENCIL, ICON_CHECK, ICON_CHART, ICON_DUMBBELL, ICON_PLUS, ICON_TRASH } from './icons.js';
 import { showToast } from './toast.js';
-import { render, renderSlides, renderHistory } from './ui.js';
+import { render, renderSlides, renderHistory, registerCallback } from './ui.js';
 
 // ── Szerkesztő mód ──
 export function toggleEdit(){
@@ -17,43 +19,12 @@ export function toggleEdit(){
   btn.classList.toggle('active', state.editMode);
   btn.innerHTML = state.editMode ? ICON_CHECK : ICON_PENCIL;
   if(state.editMode){
+    // szerkesztéskor nyitva a napmenü (napok átnevezése/hozzáadása ott)
     document.getElementById('dayMenu').classList.add('open');
     document.getElementById('topTitle').classList.add('open');
-  } else {
-    render();
   }
-  renderDayBarEdit();
-  renderSlides();
-  showToast(state.editMode ? 'Szerkesztés – írd át a neveket' : 'Mentve');
-}
-
-export function renderDayBarEdit(){
-  document.querySelectorAll('#dayBar .day-btn').forEach((b,i)=>{
-    b.onclick = state.editMode ? null : (()=>selectDay(i));
-    const dl = b.querySelector('.dl');
-    const ds = b.querySelector('.ds');
-    if(state.editMode){
-      if(dl.tagName !== 'INPUT'){
-        const inDl = document.createElement('input');
-        inDl.className='dl dl-input'; inDl.value=getDayName(i);
-        inDl.onchange=()=>{ setDayName(i,inDl.value); render(); };
-        dl.replaceWith(inDl);
-      }
-      if(ds.tagName !== 'INPUT'){
-        const inDs = document.createElement('input');
-        inDs.className='ds ds-input'; inDs.value=getDaySub(i);
-        inDs.onchange=()=>{ setDaySub(i,inDs.value); };
-        ds.replaceWith(inDs);
-      }
-    } else {
-      if(dl.tagName === 'INPUT'){
-        const sp=document.createElement('span'); sp.className='dl'; sp.textContent=getDayName(i); dl.replaceWith(sp);
-      }
-      if(ds.tagName === 'INPUT'){
-        const sp=document.createElement('span'); sp.className='ds'; sp.textContent=getDaySub(i); ds.replaceWith(sp);
-      }
-    }
-  });
+  render();
+  showToast(state.editMode ? 'Szerkesztés – napok és gyakorlatok' : 'Kész');
 }
 
 // ── Oldalváltás (edzés / statisztika) ──
@@ -63,7 +34,7 @@ export function showPage(page){
   const hb = document.getElementById('btnHistory');
   hb.classList.toggle('active', page==='history');
   hb.innerHTML = page==='history' ? ICON_DUMBBELL : ICON_CHART;
-  document.getElementById('navBtns').style.display = page==='workout' ? 'flex' : 'none';
+  document.getElementById('navBtns').style.display = (page==='workout' && !state.editMode) ? 'flex' : 'none';
   if(page==='history'){ closeDayMenu(); renderHistory(); }
 }
 export function togglePage(){
@@ -115,3 +86,82 @@ export function closeWeekModal(e){
   if(e && e.target!==document.getElementById('weekModal')) return;
   document.getElementById('weekModal').classList.remove('open');
 }
+
+// ── Terv választó/kezelő ──
+export function openPlanMenu(){
+  const menu = document.getElementById('planMenu');
+  const open = menu.classList.toggle('open');
+  document.getElementById('planSwitch').classList.toggle('open', open);
+  if(open) renderPlanMenu();
+}
+export function closePlanMenu(){
+  document.getElementById('planMenu').classList.remove('open');
+  document.getElementById('planSwitch').classList.remove('open');
+}
+function renderPlanMenu(){
+  const menu = document.getElementById('planMenu');
+  menu.innerHTML = '';
+  const plans = getPlans();
+  const curId = getCurrentPlanId();
+
+  plans.forEach(p=>{
+    const row = document.createElement('div');
+    row.className = 'plan-row' + (p.id===curId ? ' active' : '');
+
+    const name = document.createElement('button');
+    name.className = 'plan-name-btn';
+    name.textContent = p.name;
+    name.onclick = ()=>{ switchPlan(p.id); };
+    row.appendChild(name);
+
+    // törlés (ha több mint egy terv van)
+    if(plans.length > 1){
+      const del = document.createElement('button');
+      del.className = 'plan-del';
+      del.innerHTML = ICON_TRASH;
+      del.onclick = (e)=>{
+        e.stopPropagation();
+        if(confirm(`Törlöd a(z) "${p.name}" tervet és minden hozzá tartozó adatot?`)){
+          deletePlan(p.id);
+          if(p.id===curId){
+            state.currentDay = 0; state.currentEx = 0;
+            loadDayIntoWorking();
+          }
+          renderPlanMenu();
+          render();
+        }
+      };
+      row.appendChild(del);
+    }
+    menu.appendChild(row);
+  });
+
+  // új terv
+  const add = document.createElement('button');
+  add.className = 'plan-add';
+  add.innerHTML = ICON_PLUS + '<span>Új terv</span>';
+  add.onclick = ()=>{
+    const name = prompt('Az új edzésterv neve:');
+    if(name === null) return;
+    const id = createPlan(name.trim() || 'Új terv');
+    switchPlan(id);
+  };
+  menu.appendChild(add);
+}
+function switchPlan(id){
+  setCurrentPlanId(id);
+  state.currentDay = 0;
+  state.currentEx = 0;
+  if(state.editMode){ state.editMode = false; document.getElementById('btnEdit').classList.remove('active'); }
+  loadDayIntoWorking();
+  render();
+  closePlanMenu();
+  showToast('Terv kiválasztva');
+}
+
+// A nap-sáv szerkesztő callback-jeit az ui.js hívja
+registerCallback('selectDay', selectDay);
+registerCallback('afterStructChange', ()=>{
+  loadDayIntoWorking();
+  render();
+});

@@ -2,25 +2,32 @@
 //  EDZÉS NÉZET
 // ════════════════════════════════════════════
 
-import { DAYS } from './data.js';
 import { state } from './state.js';
 import {
   getStored, setStored, getCurrent, getPrev,
-  getWorking, setWorking,
+  setWorking,
   getBodyweight, setBodyweight,
   getNote, setNote,
-  getWorkoutDate, setWorkoutDate, todayISO, fmtDate,
+  getWorkoutDate, todayISO, fmtDate,
 } from './storage.js';
 import { getExName, setExName } from './names.js';
-import { ICON_DUMBBELL_SM, ICON_CHEVRON_UP, ICON_CHEVRON_DOWN } from './icons.js';
+import { getDays, addExercise, deleteExercise, moveExercise } from './plans.js';
+import {
+  ICON_DUMBBELL_SM, ICON_CHEVRON_UP, ICON_CHEVRON_DOWN,
+  ICON_NOTE, ICON_PLUS, ICON_TRASH, ICON_CLOSE, ICON_CHEVRON_UP as ICON_UP,
+} from './icons.js';
 import { showToast } from './toast.js';
 import { registerRenderer, renderExNav, renderSlides, updateNavBtns, updateProgress } from './ui.js';
 import { exportData } from './backup.js';
+
+function curDay(){ return getDays()[state.currentDay]; }
 
 // ── Gyakorlat-sáv (pill-ek) ──
 function doRenderExNav(){
   const nav = document.getElementById('exNav');
   nav.innerHTML = '';
+  const day = curDay();
+  if(!day) return;
 
   // Testsúly fül (currentEx === -1)
   const bwPill = document.createElement('div');
@@ -30,7 +37,7 @@ function doRenderExNav(){
   bwPill.onclick = ()=>{ state.currentEx = -1; renderSlides(); renderExNav(); updateNavBtns(); };
   nav.appendChild(bwPill);
 
-  DAYS[state.currentDay].exercises.forEach((ex,i)=>{
+  day.exercises.forEach((ex,i)=>{
     const pill = document.createElement('div');
     pill.className = 'ex-pill';
     if(i === state.currentEx) pill.classList.add('active');
@@ -39,14 +46,13 @@ function doRenderExNav(){
     const dot = document.createElement('span');
     dot.className = 'pill-dot';
     const lbl = document.createElement('span');
-    lbl.textContent = (i+1)+'. '+getExName(state.currentDay,i).split(' ')[0];
+    lbl.textContent = (i+1)+'. '+(getExName(state.currentDay,i)||'').split(' ')[0];
     pill.appendChild(dot);
     pill.appendChild(lbl);
     pill.onclick = ()=>{ state.currentEx = i; renderSlides(); renderExNav(); updateNavBtns(); };
     nav.appendChild(pill);
   });
 
-  // aktív pill láthatóvá görgetése
   setTimeout(()=>{
     const active = nav.querySelector('.ex-pill.active');
     if(active) active.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
@@ -54,7 +60,9 @@ function doRenderExNav(){
 }
 
 function isExDone(ei){
-  const ex = DAYS[state.currentDay].exercises[ei];
+  const day = curDay();
+  const ex = day && day.exercises[ei];
+  if(!ex) return false;
   for(let s=0;s<ex.sets;s++){
     for(const f of ['kg','reps']){
       if(getCurrent(state.currentDay,ei,s,f) === null) return false;
@@ -69,12 +77,32 @@ function doRenderSlides(){
   track.innerHTML = '';
   const slide = document.createElement('div');
   slide.className = 'ex-slide';
-  if(state.currentEx === -1){
+
+  if(state.editMode){
+    slide.appendChild(buildEditList());
+  } else if(state.currentEx === -1){
     slide.appendChild(buildBodyweightCard());
   } else {
-    slide.appendChild(buildFocusCard(state.currentEx));
+    const day = curDay();
+    if(day && day.exercises.length){
+      // ha currentEx kívül esik, korrigáljuk
+      if(state.currentEx >= day.exercises.length) state.currentEx = day.exercises.length-1;
+      slide.appendChild(buildFocusCard(state.currentEx));
+    } else {
+      slide.appendChild(buildEmptyDay());
+    }
   }
   track.appendChild(slide);
+}
+
+function buildEmptyDay(){
+  const card = document.createElement('div');
+  card.className = 'focus-card';
+  const p = document.createElement('div');
+  p.className = 'empty-hint';
+  p.textContent = 'Ehhez a naphoz még nincs gyakorlat. Kapcsold be a szerkesztőt (ceruza) és vegyél fel egyet.';
+  card.appendChild(p);
+  return card;
 }
 
 function buildBodyweightCard(){
@@ -113,27 +141,25 @@ function buildBodyweightCard(){
 }
 
 function buildFocusCard(ei){
-  const ex = DAYS[state.currentDay].exercises[ei];
+  const day = curDay();
+  const ex = day.exercises[ei];
   const card = document.createElement('div');
-  card.className = 'focus-card' + (ei===state.currentEx ? ' is-active-ex' : '');
-  card.id = `fcard_${ei}`;
+  card.className = 'focus-card is-active-ex';
 
-  // cím sor
+  // cím sor + komment gomb
   const top = document.createElement('div');
   top.className = 'fc-top';
-  if(state.editMode){
-    const nmInput = document.createElement('input');
-    nmInput.className = 'fc-name-input';
-    nmInput.value = getExName(state.currentDay,ei);
-    nmInput.placeholder = 'Gyakorlat neve';
-    nmInput.onchange = ()=>{ setExName(state.currentDay,ei,nmInput.value); renderExNav(); };
-    top.appendChild(nmInput);
-  } else {
-    const nm = document.createElement('div');
-    nm.className = 'fc-name';
-    nm.textContent = getExName(state.currentDay,ei);
-    top.appendChild(nm);
-  }
+  const nm = document.createElement('div');
+  nm.className = 'fc-name';
+  nm.textContent = getExName(state.currentDay,ei);
+  top.appendChild(nm);
+
+  const noteBtn = document.createElement('button');
+  noteBtn.className = 'fc-note-btn';
+  if(getNote(state.currentWeek,state.currentDay,ei)) noteBtn.classList.add('has-note');
+  noteBtn.innerHTML = ICON_NOTE;
+  noteBtn.onclick = ()=>openNoteModal(ei);
+  top.appendChild(noteBtn);
   card.appendChild(top);
 
   // sorozatok
@@ -152,43 +178,134 @@ function buildFocusCard(ei){
     ['kg','reps'].forEach(f=>{ row.appendChild(buildDragCtrl(ei, s, f)); });
     list.appendChild(row);
 
-    // előző sor
+    // előző sor — EGY chip: "50 kg × 5"
     const prev = document.createElement('div');
     prev.className = 'prev-row';
-    ['kg','reps'].forEach(f=>{
-      const chip = document.createElement('div');
-      chip.className = 'prev-chip';
-      const pl = document.createElement('div');
-      pl.className = 'prev-label';
-      pl.textContent = 'előző';
-      const pv = document.createElement('div');
-      pv.className = 'prev-val';
-      const pVal = getPrev(state.currentDay,ei,s,f);
-      pv.textContent = pVal !== null ? pVal + (f==='kg'?' kg':' ism') : '—';
-      chip.appendChild(pl);
-      chip.appendChild(pv);
-      prev.appendChild(chip);
-    });
+    const chip = document.createElement('div');
+    chip.className = 'prev-chip prev-chip-single';
+    const pl = document.createElement('span');
+    pl.className = 'prev-label';
+    pl.textContent = 'előző:';
+    const pv = document.createElement('span');
+    pv.className = 'prev-val';
+    const pKg = getPrev(state.currentDay,ei,s,'kg');
+    const pRp = getPrev(state.currentDay,ei,s,'reps');
+    pv.textContent = (pKg!==null || pRp!==null) ? `${pKg??'?'} kg × ${pRp??'?'}` : '—';
+    chip.appendChild(pl);
+    chip.appendChild(pv);
+    prev.appendChild(chip);
     list.appendChild(prev);
   }
 
   card.appendChild(list);
+  return card;
+}
 
-  // komment mező (nem szerkesztő módban)
-  if(!state.editMode){
-    const noteWrap = document.createElement('div');
-    noteWrap.className = 'note-wrap';
-    const noteTa = document.createElement('textarea');
-    noteTa.className = 'note-input';
-    noteTa.placeholder = 'Megjegyzés ehhez a gyakorlathoz…';
-    noteTa.rows = 2;
-    noteTa.value = getNote(state.currentWeek,state.currentDay,ei);
-    noteTa.oninput = ()=>{ setNote(state.currentWeek,state.currentDay,ei, noteTa.value); };
-    noteWrap.appendChild(noteTa);
-    card.appendChild(noteWrap);
+// ── Szerkesztő mód: gyakorlat-lista (átnevezés/mozgatás/törlés/hozzáadás) ──
+function buildEditList(){
+  const wrap = document.createElement('div');
+  wrap.className = 'edit-list';
+
+  const day = curDay();
+  if(!day){
+    const p = document.createElement('div');
+    p.className = 'empty-hint';
+    p.textContent = 'Nincs kiválasztott nap.';
+    wrap.appendChild(p);
+    return wrap;
   }
 
-  return card;
+  const title = document.createElement('div');
+  title.className = 'edit-list-title';
+  title.textContent = `${day.name} — gyakorlatok`;
+  wrap.appendChild(title);
+
+  day.exercises.forEach((ex,ei)=>{
+    const item = document.createElement('div');
+    item.className = 'edit-item';
+
+    const nameInput = document.createElement('input');
+    nameInput.className = 'edit-item-name';
+    nameInput.value = ex.name;
+    nameInput.onchange = ()=>{ setExName(state.currentDay,ei,nameInput.value); renderExNav(); };
+
+    const ctrls = document.createElement('div');
+    ctrls.className = 'edit-item-ctrls';
+
+    const up = document.createElement('button');
+    up.className = 'ei-btn';
+    up.innerHTML = ICON_CHEVRON_UP;
+    up.disabled = ei===0;
+    up.onclick = ()=>{ moveExercise(state.currentDay,ei,-1); renderSlides(); renderExNav(); };
+
+    const down = document.createElement('button');
+    down.className = 'ei-btn';
+    down.innerHTML = ICON_CHEVRON_DOWN;
+    down.disabled = ei===day.exercises.length-1;
+    down.onclick = ()=>{ moveExercise(state.currentDay,ei,1); renderSlides(); renderExNav(); };
+
+    const del = document.createElement('button');
+    del.className = 'ei-btn ei-del';
+    del.innerHTML = ICON_TRASH;
+    del.onclick = ()=>{
+      if(confirm(`Törlöd: "${ex.name}"?`)){
+        deleteExercise(state.currentDay,ei);
+        renderSlides(); renderExNav();
+      }
+    };
+
+    ctrls.appendChild(up);
+    ctrls.appendChild(down);
+    ctrls.appendChild(del);
+
+    item.appendChild(nameInput);
+    item.appendChild(ctrls);
+    wrap.appendChild(item);
+  });
+
+  const add = document.createElement('button');
+  add.className = 'edit-add';
+  add.innerHTML = ICON_PLUS + '<span>Új gyakorlat</span>';
+  add.onclick = ()=>{
+    addExercise(state.currentDay, 'Új gyakorlat');
+    renderSlides(); renderExNav();
+  };
+  wrap.appendChild(add);
+
+  return wrap;
+}
+
+// ── Komment modal ──
+function openNoteModal(ei){
+  let modal = document.getElementById('noteModal');
+  if(!modal){
+    modal = document.createElement('div');
+    modal.id = 'noteModal';
+    modal.className = 'modal-ov';
+    modal.innerHTML = `
+      <div class="modal-box note-modal-box">
+        <div class="note-modal-head">
+          <span class="note-modal-title"></span>
+          <button class="note-modal-close" aria-label="Bezárás">${ICON_CLOSE}</button>
+        </div>
+        <textarea class="note-modal-input" rows="5" placeholder="Megjegyzés ehhez a gyakorlathoz…"></textarea>
+      </div>`;
+    document.body.appendChild(modal);
+    modal.addEventListener('click', e=>{ if(e.target===modal) closeNoteModal(); });
+    modal.querySelector('.note-modal-close').addEventListener('click', closeNoteModal);
+  }
+  const ta = modal.querySelector('.note-modal-input');
+  modal.querySelector('.note-modal-title').textContent = getExName(state.currentDay,ei);
+  ta.value = getNote(state.currentWeek,state.currentDay,ei);
+  ta.oninput = ()=>{
+    setNote(state.currentWeek,state.currentDay,ei, ta.value);
+  };
+  modal.classList.add('open');
+}
+function closeNoteModal(){
+  const modal = document.getElementById('noteModal');
+  if(modal) modal.classList.remove('open');
+  renderSlides(); // a komment-gomb jelölésének frissítése
 }
 
 // ── Húzható érték-vezérlő (kg / ismétlés) ──
@@ -213,7 +330,6 @@ function buildDragCtrl(ei, s, f){
   arrows.className = 'dc-arrows';
   arrows.innerHTML = ICON_CHEVRON_UP + ICON_CHEVRON_DOWN;
 
-  // Rejtett input a billentyűzetes bevitelhez
   const inpWrap = document.createElement('div');
   inpWrap.className = 'dc-input-wrap';
   const inp = document.createElement('input');
@@ -239,7 +355,6 @@ function buildDragCtrl(ei, s, f){
 
   if(curVal !== null) wrap.classList.add('filled');
 
-  // ── Húzás logika ──
   const step = f==='kg' ? 0.5 : 1;
   const DRAG_PX = 10;
   let dragActive = false;
@@ -254,7 +369,6 @@ function buildDragCtrl(ei, s, f){
     dragActive = true;
     wrap.classList.add('dragging');
   }
-
   function moveDrag(clientY){
     if(!dragActive) return;
     const delta = dragStart - clientY;
@@ -262,9 +376,8 @@ function buildDragCtrl(ei, s, f){
     let newVal = dragBaseVal + steps * step;
     newVal = f==='kg' ? Math.round(newVal*2)/2 : Math.max(0,Math.round(newVal));
     if(newVal < 0) newVal = 0;
-    applyVal(ei,s,f,newVal,true); // némán húzás közben
+    applyVal(ei,s,f,newVal,true);
   }
-
   function endDrag(){
     dragActive = false;
     dragStart = null;
@@ -274,7 +387,6 @@ function buildDragCtrl(ei, s, f){
     renderExNav();
     updateNavBtns();
   }
-
   function openKeyboard(){
     inpWrap.classList.add('editing');
     const cur = getCurrent(state.currentDay,ei,s,f);
@@ -283,9 +395,7 @@ function buildDragCtrl(ei, s, f){
     inp.select && inp.select();
   }
 
-  // Húzás = érték; koppintás (alig mozdul) = billentyűzet
   let tStartY = 0, tStartX = 0, totalMove = 0;
-
   wrap.addEventListener('touchstart', e=>{
     if(inpWrap.classList.contains('editing')) return;
     e.preventDefault();
@@ -294,7 +404,6 @@ function buildDragCtrl(ei, s, f){
     totalMove = 0;
     startDrag(tStartY);
   }, {passive:false});
-
   wrap.addEventListener('touchmove', e=>{
     if(!dragActive) return;
     e.preventDefault();
@@ -303,7 +412,6 @@ function buildDragCtrl(ei, s, f){
     totalMove += Math.abs(y - tStartY) + Math.abs(x - tStartX);
     moveDrag(y);
   }, {passive:false});
-
   wrap.addEventListener('touchend', ()=>{
     const wasDragging = dragActive;
     endDrag();
@@ -311,7 +419,6 @@ function buildDragCtrl(ei, s, f){
   });
   wrap.addEventListener('touchcancel', ()=>endDrag());
 
-  // Egér (asztali teszt)
   let mouseMoved = 0;
   wrap.addEventListener('mousedown', e=>{
     if(inpWrap.classList.contains('editing')) return;
@@ -351,9 +458,9 @@ function applyVal(ei,s,f,val,silent=false){
 
 // ── Léptetés / gombok ──
 export function goEx(dir){
-  const exes = DAYS[state.currentDay].exercises.length;
+  const day = curDay();
+  const exes = day ? day.exercises.length : 0;
   const prev = state.currentEx;
-  // Az utolsó gyakorlatnál a "Kész" (előre lépés) befejezi a napot
   if(dir > 0 && state.currentEx === exes-1){
     finishDay();
     return;
@@ -369,7 +476,12 @@ export function goEx(dir){
 }
 
 function doUpdateNavBtns(){
-  const exes = DAYS[state.currentDay].exercises.length;
+  const day = curDay();
+  const exes = day ? day.exercises.length : 0;
+  const navBtns = document.getElementById('navBtns');
+  // szerkesztő módban nincs léptetés
+  navBtns.style.display = (state.editMode || state.currentPage!=='workout') ? 'none' : 'flex';
+
   document.getElementById('btnPrevEx').style.opacity = state.currentEx===-1 ? '.3' : '1';
   const nextBtn = document.getElementById('btnNextEx');
   const lbl = document.getElementById('nextLabel');
@@ -383,7 +495,8 @@ function doUpdateNavBtns(){
 }
 
 function doUpdateProgress(){
-  const day = DAYS[state.currentDay];
+  const day = curDay();
+  if(!day){ document.getElementById('progFill').style.width = '0%'; return; }
   let filled=0,total=0;
   day.exercises.forEach((ex,ei)=>{
     for(let s=0;s<ex.sets;s++){
@@ -399,7 +512,8 @@ function doUpdateProgress(){
 
 // ── Mentés ──
 export function saveDay(silent=false){
-  const day = DAYS[state.currentDay];
+  const day = curDay();
+  if(!day) return false;
   let savedAny = false;
   day.exercises.forEach((ex,ei)=>{
     for(let s=0;s<ex.sets;s++){
@@ -419,15 +533,13 @@ export function saveDay(silent=false){
   return savedAny;
 }
 
-// ── Nap befejezése: mentés + biztonsági export fájlba ──
 export function finishDay(){
-  saveDay(true);                 // némán ment
-  exportData();                  // letölti a teljes biztonsági mentést
+  saveDay(true);
+  exportData();
   const d = getWorkoutDate(state.currentWeek,state.currentDay);
   showToast(d ? `Kész – mentve és exportálva (${fmtDate(d)})` : 'Kész – mentve és exportálva');
 }
 
-// Renderelők regisztrálása az UI koordinátorba
 registerRenderer('exNav', doRenderExNav);
 registerRenderer('slides', doRenderSlides);
 registerRenderer('navBtns', doUpdateNavBtns);

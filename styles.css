@@ -24,11 +24,58 @@ body{
   flex-direction:column;
 }
 
+/* ── TERV VÁLASZTÓ (legfelső szint) ── */
+.plan-switch{
+  flex-shrink:0;
+  display:flex;align-items:center;gap:7px;
+  padding:calc(var(--st) + 10px) 16px 8px;
+  background:rgba(13,13,16,.95);
+  backdrop-filter:blur(24px);
+  -webkit-backdrop-filter:blur(24px);
+  border-bottom:1px solid var(--border);
+  cursor:pointer;user-select:none;
+  z-index:61;
+}
+.plan-label{font-size:12px;color:var(--muted);font-weight:600;}
+.plan-current{font-size:14px;font-weight:700;color:var(--accent);}
+.plan-chev{color:var(--muted);transition:transform .2s;}
+.plan-switch.open .plan-chev{transform:rotate(180deg);}
+
+.plan-menu{
+  flex-shrink:0;
+  max-height:0;overflow:hidden;
+  background:var(--surface);
+  transition:max-height .26s cubic-bezier(.4,0,.2,1);
+  z-index:60;
+}
+.plan-menu.open{max-height:320px;overflow-y:auto;border-bottom:1px solid var(--border);}
+.plan-row{
+  display:flex;align-items:center;
+  border-bottom:1px solid var(--border);
+}
+.plan-row.active{background:var(--accent-dim);}
+.plan-name-btn{
+  flex:1;text-align:left;background:transparent;border:none;
+  color:var(--text);font-family:inherit;font-size:15px;font-weight:600;
+  padding:13px 16px;cursor:pointer;
+}
+.plan-row.active .plan-name-btn{color:var(--accent);}
+.plan-del{
+  background:transparent;border:none;color:var(--danger);
+  padding:13px 16px;cursor:pointer;display:flex;align-items:center;
+}
+.plan-add{
+  display:flex;align-items:center;gap:8px;width:100%;
+  background:transparent;border:none;color:var(--accent);
+  font-family:inherit;font-size:14px;font-weight:600;
+  padding:13px 16px;cursor:pointer;
+}
+
 /* ── TOPBAR (sticky, minimal) ── */
 .topbar{
   flex-shrink:0;
   display:flex;align-items:center;gap:10px;
-  padding:calc(var(--st) + 12px) 14px 10px;
+  padding:10px 14px 10px;
   background:rgba(13,13,16,.92);
   backdrop-filter:blur(24px);
   -webkit-backdrop-filter:blur(24px);
@@ -78,7 +125,7 @@ body{
   border-bottom:1px solid var(--border);
   transition:max-height .26s cubic-bezier(.4,0,.2,1);
 }
-.day-menu.open{max-height:140px;border-bottom:1px solid var(--border);}
+.day-menu.open{max-height:50vh;overflow-y:auto;border-bottom:1px solid var(--border);}
 
 /* ── HEADER (görgethető nap-név sor) ── */
 .hdr{
@@ -108,7 +155,9 @@ body{
 
 /* ── DAY SELECTOR ── */
 .day-bar{
-  display:grid;grid-template-columns:repeat(4,1fr);gap:6px;
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(72px, 1fr));
+  gap:6px;
   padding:12px 14px;
   background:var(--surface);
 }
@@ -332,8 +381,84 @@ body{
   border-radius:8px;padding:6px 8px;
   display:flex;justify-content:space-between;align-items:center;
 }
-.prev-label{font-size:10px;color:var(--muted);}
+.prev-chip-single{justify-content:flex-start;gap:8px;}
+.prev-label{font-size:11px;color:var(--muted);}
 .prev-val{font-size:13px;font-weight:600;color:var(--muted);}
+
+/* Komment gomb a kártyán */
+.fc-note-btn{
+  flex-shrink:0;margin-left:8px;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:9px;padding:7px;color:var(--muted);
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+}
+.fc-note-btn.has-note{border-color:var(--blue);color:var(--blue);background:var(--blue-dim);}
+.fc-note-btn svg{display:block;}
+
+/* Komment modal */
+.note-modal-box{padding:18px 18px calc(var(--sb) + 18px);}
+.note-modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.note-modal-title{font-size:16px;font-weight:700;color:var(--text);}
+.note-modal-close{background:transparent;border:none;color:var(--muted);cursor:pointer;display:flex;padding:4px;}
+.note-modal-input{
+  width:100%;background:var(--card);border:1.5px solid var(--border);
+  border-radius:10px;padding:12px;color:var(--text);
+  font-family:inherit;font-size:15px;line-height:1.45;outline:none;resize:vertical;
+  -webkit-appearance:none;appearance:none;
+}
+.note-modal-input:focus{border-color:var(--accent);}
+
+/* Üres nap / hint */
+.empty-hint{font-size:14px;color:var(--muted);line-height:1.5;text-align:center;padding:10px 4px;}
+
+/* Nap-sáv szerkesztő: törlés + új nap */
+.day-btn{position:relative;}
+.day-del{
+  position:absolute;top:-6px;right:-6px;
+  width:20px;height:20px;border-radius:50%;
+  background:var(--danger);border:2px solid var(--bg);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;padding:0;
+}
+.day-del svg{width:11px;height:11px;}
+.day-add{
+  grid-column:1 / -1;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  background:var(--card);border:1.5px dashed var(--border);
+  border-radius:10px;padding:9px;color:var(--accent);
+  font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;
+}
+
+/* Szerkesztő mód: gyakorlat-lista */
+.edit-list{display:flex;flex-direction:column;gap:10px;}
+.edit-list-title{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding:0 2px;}
+.edit-item{
+  display:flex;align-items:center;gap:8px;
+  background:var(--card);border:1px solid var(--border);
+  border-radius:12px;padding:8px 10px;
+}
+.edit-item-name{
+  flex:1;background:var(--surface);border:1.5px solid var(--border);
+  border-radius:8px;padding:9px 10px;color:var(--text);
+  font-family:inherit;font-size:14px;font-weight:600;outline:none;min-width:0;
+}
+.edit-item-name:focus{border-color:var(--accent);}
+.edit-item-ctrls{display:flex;gap:4px;flex-shrink:0;}
+.ei-btn{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:8px;padding:8px;color:var(--muted);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+}
+.ei-btn:disabled{opacity:.3;}
+.ei-btn.ei-del{color:var(--danger);}
+.ei-btn svg{display:block;}
+.edit-add{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  background:var(--card);border:1.5px dashed var(--border);
+  border-radius:12px;padding:12px;color:var(--accent);
+  font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;
+}
+
 
 /* NEXT/PREV EXERCISE BUTTONS */
 .ex-nav-btns{

@@ -2,7 +2,8 @@
 //  STATISZTIKA NÉZET
 // ════════════════════════════════════════════
 
-import { DAYS, BASE_HISTORY, MAX_WEEKS } from './data.js';
+import { BASE_HISTORY, MAX_WEEKS } from './data.js';
+import { getDays, getCurrentPlanId, BASE_PLAN_ID } from './plans.js';
 import { state } from './state.js';
 import {
   getStored, getNote,
@@ -125,7 +126,7 @@ function doRenderHistory(){
   // testsúly legfelül
   page.appendChild(buildBodyweightSection());
 
-  DAYS.forEach((dayDef, di)=>{
+  getDays().forEach((dayDef, di)=>{
     const section = document.createElement('div');
 
     const title = document.createElement('div');
@@ -189,15 +190,16 @@ function doRenderHistory(){
       nameCell.textContent = getExName(di,ei);
       row.appendChild(nameCell);
 
+      const useBase = getCurrentPlanId() === BASE_PLAN_ID;
       showWeeks.forEach(w=>{
         const cell = document.createElement('div');
         cell.className = 'hist-cell hist-val';
         let lines = [];
         for(let s=0;s<ex.sets;s++){
-          const kg = w===1 && getStored(w,di,ei,s,'kg')===null
+          const kg = (useBase && w===1 && getStored(w,di,ei,s,'kg')===null)
             ? (BASE_HISTORY[ex.name]?.[s]?.[0] ?? null)
             : getStored(w,di,ei,s,'kg');
-          const rp = w===1 && getStored(w,di,ei,s,'reps')===null
+          const rp = (useBase && w===1 && getStored(w,di,ei,s,'reps')===null)
             ? (BASE_HISTORY[ex.name]?.[s]?.[1] ?? null)
             : getStored(w,di,ei,s,'reps');
           if(kg !== null || rp !== null){
