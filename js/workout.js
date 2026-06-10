@@ -46,7 +46,7 @@ function doRenderExNav(){
     const dot = document.createElement('span');
     dot.className = 'pill-dot';
     const lbl = document.createElement('span');
-    lbl.textContent = (i+1)+'. '+(getExName(state.currentDay,i)||'').split(' ')[0];
+    lbl.textContent = (getExName(state.currentDay,i)||'').split(' ')[0];
     pill.appendChild(dot);
     pill.appendChild(lbl);
     pill.onclick = ()=>{ state.currentEx = i; renderSlides(); renderExNav(); updateNavBtns(); };
