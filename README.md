@@ -29,12 +29,16 @@ js/
 
 ## Felhasználói profilok (userID)
 
-A user-réteg a terv-réteg fölött áll. Minden kulcs user-prefixet kap (`{userID}__`),
-KIVÉVE az alap-usert (`u0`), amely prefix nélküli kulcsokat használ — így a korábbi
-adatok az alap-userhez tartoznak. A profil a "⋯" menü → Profil pontban érhető el:
-ott leolvasható az aktuális userID, átnevezhető a profil, és egy userID beírásával
-átválthatsz másikra (új azonosító → új, üres profil). Minden user saját tervekkel
-és adatokkal rendelkezik.
+Minden eszköz az első indításkor egy **generált, egyedi azonosítót** kap (pl.
+`u_4n4q3e6s4k54`), nem közös azonosítót. Minden kulcs ezt az azonosítót viseli
+prefixként (`{userID}__`), így több profil és később több felhasználó adatai is jól
+elkülöníthetők. A profil a "⋯" menü → Profil pontban érhető el: ott leolvasható az
+aktuális userID, átnevezhető a profil, beírható egy másik userID a váltáshoz, vagy
+"+ Új profil" gombbal generálható új, egyedi azonosítójú profil.
+
+Megjegyzés: az azonosító a böngésző localStorage-ához kötődik. Ha azt törlik vagy
+más böngészőt/eszközt használnak, új azonosító generálódik. Valódi, eszközök közti
+egyediséghez és központi kezeléshez később felhős megoldás szükséges.
 
 ## Edzéstervek (plans)
 

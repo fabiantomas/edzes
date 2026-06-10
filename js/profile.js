@@ -5,7 +5,7 @@
 import { state } from './state.js';
 import {
   getUsers, getCurrentUserId, getCurrentUserName,
-  renameUser, selectOrCreateUser, deleteUser, BASE_USER_ID,
+  renameUser, selectOrCreateUser, deleteUser, createUserWithGeneratedId,
 } from './user.js';
 import { loadDayIntoWorking } from './storage.js';
 import { ICON_CLOSE, ICON_TRASH } from './icons.js';
@@ -42,7 +42,8 @@ export function openProfile(){
             <input class="profile-input" id="profileSwitchInput" placeholder="userID beírása…" autocapitalize="off" autocomplete="off">
             <button class="profile-go" id="profileGoBtn">Váltás</button>
           </div>
-          <div class="profile-hint">Ha létező azonosítót írsz be, arra váltasz. Ha újat, új profil jön létre üres adatokkal.</div>
+          <button class="profile-new" id="profileNewBtn">+ Új profil (egyedi azonosítóval)</button>
+          <div class="profile-hint">Új profil automatikusan kap egy egyedi azonosítót. Ha kézzel írsz be létező azonosítót, arra váltasz.</div>
         </div>
 
         <div class="profile-section">
@@ -62,6 +63,15 @@ export function openProfile(){
     modal.querySelector('#profileGoBtn').addEventListener('click', ()=>{
       const val = modal.querySelector('#profileSwitchInput').value;
       doSwitch(val);
+    });
+    modal.querySelector('#profileNewBtn').addEventListener('click', ()=>{
+      const name = prompt('Az új profil neve:');
+      if(name === null) return;
+      createUserWithGeneratedId(name.trim() || 'Új profil');
+      resetStateForNewUser();
+      render();
+      refreshProfile();
+      showToast('Új profil: ' + getCurrentUserName());
     });
     modal.querySelector('#profileSwitchInput').addEventListener('keydown', (e)=>{
       if(e.key === 'Enter'){ doSwitch(e.target.value); }
@@ -97,7 +107,7 @@ function refreshProfile(){
     info.onclick = ()=>doSwitch(u.id);
     row.appendChild(info);
 
-    if(users.length > 1 && u.id !== BASE_USER_ID){
+    if(users.length > 1){
       const del = document.createElement('button');
       del.className = 'profile-del';
       del.innerHTML = ICON_TRASH;

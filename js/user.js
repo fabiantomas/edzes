@@ -1,23 +1,37 @@
 // ════════════════════════════════════════════
 //  FELHASZNÁLÓI PROFIL (userID)
 // ════════════════════════════════════════════
-// A user-réteg a terv-réteg fölött áll. Minden adat- és terv-kulcs user-prefixet
-// kap, KIVÉVE az alap-usert (u0), amely a jelenlegi (csak terv-prefixes) kulcsokat
-// használja — így a korábban rögzített adatok az alap-userhez tartoznak és
-// érintetlenül megmaradnak. Másik userID-re váltva teljesen külön adathalmaz él.
+// Minden eszköz az első indításkor egy generált, gyakorlatilag egyedi azonosítót
+// kap (nem közös "u0"). Minden adat- és terv-kulcs user-prefixet visel
+// (`{userID}__`), így több profil és később több felhasználó adatai is jól
+// elkülöníthetők. Megjegyzés: az ID a böngésző localStorage-ához kötődik; ha azt
+// törlik vagy más böngészőt használnak, új ID generálódik. Valódi, eszközök közti
+// egyediséghez később felhős megoldás kell.
 
 const USERS_KEY = 'users';            // [{id, name}]
 const CURRENT_USER_KEY = 'currentUser';
-const BASE_USER_ID = 'u0';            // alap-user: nincs user-prefix
+
+// ── Egyedi ID generálása ──
+function generateUserId(){
+  // időbélyeg + véletlen, base36 — rövid, olvasható, ütközésmentes a gyakorlatban
+  const rnd = (typeof crypto !== 'undefined' && crypto.getRandomValues)
+    ? Array.from(crypto.getRandomValues(new Uint8Array(4))).map(b=>b.toString(36)).join('')
+    : Math.random().toString(36).slice(2, 10);
+  const ts = Date.now().toString(36).slice(-4);
+  return ('u_' + ts + rnd).replace(/[^a-z0-9_]/gi,'').slice(0, 16);
+}
 
 // ── User-lista ──
+// Első hozzáférésnél létrehozza az eszköz egyedi profilját.
 export function getUsers(){
   const raw = localStorage.getItem(USERS_KEY);
   if(raw){
     try{ const arr = JSON.parse(raw); if(Array.isArray(arr) && arr.length) return arr; }catch(e){}
   }
-  const def = [{ id: BASE_USER_ID, name: 'Alap profil' }];
+  const id = generateUserId();
+  const def = [{ id, name: 'Profil' }];
   localStorage.setItem(USERS_KEY, JSON.stringify(def));
+  localStorage.setItem(CURRENT_USER_KEY, id);
   return def;
 }
 function saveUsers(users){
@@ -25,7 +39,14 @@ function saveUsers(users){
 }
 
 export function getCurrentUserId(){
-  return localStorage.getItem(CURRENT_USER_KEY) || BASE_USER_ID;
+  let id = localStorage.getItem(CURRENT_USER_KEY);
+  if(!id){
+    // biztosítjuk, hogy létezzen profil (getUsers generál egyet, ha kell)
+    const users = getUsers();
+    id = localStorage.getItem(CURRENT_USER_KEY) || users[0].id;
+    localStorage.setItem(CURRENT_USER_KEY, id);
+  }
+  return id;
 }
 export function setCurrentUserId(id){
   localStorage.setItem(CURRENT_USER_KEY, id);
@@ -35,16 +56,13 @@ export function getCurrentUserName(){
   const u = getUsers().find(u=>u.id===id);
   return u ? u.name : id;
 }
-
-// A userID maga az azonosító, amit a profil fülön le lehet olvasni / be lehet írni.
 export function getCurrentUserDisplayId(){
   return getCurrentUserId();
 }
 
-// User-prefix az összes kulcshoz (alap-user: üres)
+// Minden adatkulcs user-prefixe (mindig van prefix; nincs kivételezett user)
 export function userPrefix(){
-  const id = getCurrentUserId();
-  return id === BASE_USER_ID ? '' : `${id}__`;   // dupla aláhúzás elválasztó
+  return `${getCurrentUserId()}__`;
 }
 
 // ── Profil átnevezése (megjelenített név) ──
@@ -55,8 +73,7 @@ export function renameUser(id, name){
 }
 
 // ── Profil kiválasztása / létrehozása userID alapján ──
-// Ha a megadott id már létezik → arra váltunk. Ha nem → új profil jön létre
-// ezzel az id-vel, üres adathalmazzal.
+// Létező id → arra váltunk. Új id → új profil üres adatokkal.
 export function selectOrCreateUser(rawId, name){
   const id = sanitizeId(rawId);
   if(!id) return null;
@@ -73,7 +90,16 @@ export function selectOrCreateUser(rawId, name){
   return id;
 }
 
-// userID tisztítása: a kulcsokban használjuk, ezért nincs whitespace/elválasztó
+// ── Új profil generált ID-vel ──
+export function createUserWithGeneratedId(name){
+  const id = generateUserId();
+  const users = getUsers();
+  users.push({ id, name: name || 'Új profil' });
+  saveUsers(users);
+  setCurrentUserId(id);
+  return id;
+}
+
 function sanitizeId(raw){
   if(!raw) return '';
   return String(raw).trim().replace(/[^A-Za-z0-9._-]/g, '_').slice(0, 40);
@@ -81,8 +107,7 @@ function sanitizeId(raw){
 
 export function deleteUser(id){
   let users = getUsers();
-  if(users.length <= 1) return false;
-  if(id === BASE_USER_ID) return false;          // az alap-usert nem töröljük
+  if(users.length <= 1) return false;          // az utolsó profilt nem töröljük
   users = users.filter(u=>u.id!==id);
   saveUsers(users);
   removeUserData(id);
@@ -91,7 +116,6 @@ export function deleteUser(id){
 }
 
 function removeUserData(id){
-  if(id === BASE_USER_ID) return;
   const prefix = `${id}__`;
   const toRemove = [];
   for(let i=0;i<localStorage.length;i++){
@@ -101,4 +125,4 @@ function removeUserData(id){
   toRemove.forEach(k=>localStorage.removeItem(k));
 }
 
-export { BASE_USER_ID, sanitizeId };
+export { sanitizeId };
