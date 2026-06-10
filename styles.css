@@ -371,7 +371,7 @@ body{
 .sets-list{display:flex;flex-direction:column;gap:10px;}
 .set-row{
   display:grid;
-  grid-template-columns:28px 1fr 1fr;
+  grid-template-columns:1fr 1fr;
   gap:8px;align-items:center;
 }
 .set-num{font-size:12px;color:var(--muted);font-weight:700;text-align:center;}
@@ -552,19 +552,22 @@ body{
   background:var(--blue);color:#0d0d10;
   border:none;border-radius:12px;padding:14px 18px;
   cursor:pointer;flex-shrink:0;
-  display:flex;align-items:center;justify-content:center;
-  transition:background .2s, transform .12s;
+  display:flex;align-items:center;justify-content:center;gap:7px;
+  font-family:inherit;font-size:15px;font-weight:800;
+  transition:background .25s, transform .12s, padding .25s;
 }
 .btn-save-day:active{transform:scale(.92);}
 .btn-prev-ex svg,.btn-save-day svg{display:block;}
 .btn-save-day .save-check{display:none;}
-/* mentés utáni visszajelzés: zöldre vált, pipa villan, rövid pulzálás */
-.btn-save-day.saved{background:var(--accent);animation:savePulse .5s ease;}
+.btn-save-day .save-label{display:none;}
+/* mentés utáni visszajelzés: zöldre vált, pipa + "Mentve" felirat ~1.2 mp-ig */
+.btn-save-day.saved{background:var(--accent);animation:savePulse .6s ease;}
 .btn-save-day.saved .save-icon{display:none;}
 .btn-save-day.saved .save-check{display:block;}
+.btn-save-day.saved .save-label{display:inline;}
 @keyframes savePulse{
-  0%{box-shadow:0 0 0 0 var(--accent);}
-  60%{box-shadow:0 0 0 10px rgba(184,255,87,0);}
+  0%{box-shadow:0 0 0 0 rgba(184,255,87,.7);}
+  70%{box-shadow:0 0 0 14px rgba(184,255,87,0);}
   100%{box-shadow:0 0 0 0 rgba(184,255,87,0);}
 }
 

@@ -170,11 +170,6 @@ function buildFocusCard(ei){
     const row = document.createElement('div');
     row.className = 'set-row';
 
-    const num = document.createElement('div');
-    num.className = 'set-num';
-    num.textContent = s+1;
-    row.appendChild(num);
-
     ['kg','reps'].forEach(f=>{ row.appendChild(buildDragCtrl(ei, s, f)); });
     list.appendChild(row);
 

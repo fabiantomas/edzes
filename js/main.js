@@ -55,7 +55,7 @@ $('btnSaveDay').addEventListener('click', ()=>{
   btn.classList.remove('saved');     // újraindításhoz
   void btn.offsetWidth;              // reflow, hogy az animáció újrainduljon
   btn.classList.add('saved');
-  setTimeout(()=>btn.classList.remove('saved'), 1100);
+  setTimeout(()=>btn.classList.remove('saved'), 1400);
 });
 
 // ── Hét modal háttér ──
