@@ -659,6 +659,26 @@ export function saveDay(silent=false){
 
 export function finishDay(){
   saveDay(true);
+
+  const day = curDay();
+  // van-e már nyújtás-gyakorlat a napban?
+  const hasStretch = day && day.exercises.some(ex=>ex.type==='stretch');
+
+  if(day && !hasStretch){
+    // automatikusan hozzáadunk egy nyújtást a terhelt izmokhoz, és odaugrunk
+    const tasks = suggestedStretchTasks();
+    if(tasks.length > 0){
+      addStretchExercise(state.currentDay, 'Nyújtás', tasks);
+      state.currentEx = curDay().exercises.length - 1;  // az új nyújtásra ugrunk
+      renderSlides(); renderExNav(); updateNavBtns(); updateProgress();
+      const wp = document.getElementById('workoutPage');
+      if(wp) wp.scrollTo({top:0, behavior:'smooth'});
+      showToast('Nyújtás hozzáadva – pipáld ki, amit elvégeztél');
+      return;
+    }
+  }
+
+  // van már nyújtás (vagy nincs mit hozzáadni): lezárás + export
   exportData();
   const d = getWorkoutDate(state.currentWeek,state.currentDay);
   showToast(d ? `Kész – mentve és exportálva (${fmtDate(d)})` : 'Kész – mentve és exportálva');
