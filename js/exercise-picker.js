@@ -77,18 +77,30 @@ function renderList(filter){
 
     const gEl = document.createElement('div');
     gEl.className = 'exp-group';
-    const gTitle = document.createElement('div');
-    gTitle.className = 'exp-group-title';
-    gTitle.textContent = group.group;
-    gEl.appendChild(gTitle);
 
+    // csoport fejléc (összecsukható). Keresés közben nyitva, egyébként csukva.
+    const open = !!f;
+    const header = document.createElement('button');
+    header.className = 'exp-group-header' + (open ? ' open' : '');
+    header.innerHTML = `<span>${group.group}</span><span class="exp-count">${matches.length}</span><svg class="exp-chev" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`;
+    gEl.appendChild(header);
+
+    const items = document.createElement('div');
+    items.className = 'exp-items' + (open ? ' open' : '');
     matches.forEach(name=>{
       const btn = document.createElement('button');
       btn.className = 'exp-item';
       btn.textContent = name;
       btn.onclick = ()=>pick(name);
-      gEl.appendChild(btn);
+      items.appendChild(btn);
     });
+    gEl.appendChild(items);
+
+    header.onclick = ()=>{
+      const isOpen = items.classList.toggle('open');
+      header.classList.toggle('open', isOpen);
+    };
+
     list.appendChild(gEl);
   });
 

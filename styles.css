@@ -458,6 +458,57 @@ body{
 
 /* Komment modal */
 .note-modal-box{padding:18px 18px calc(var(--sb) + 18px);}
+
+/* ── GYAKORLAT-VÁLASZTÓ ── */
+.exp-box{padding:18px 16px calc(var(--sb) + 16px);display:flex;flex-direction:column;max-height:82vh;}
+.exp-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.exp-title{font-size:17px;font-weight:800;color:var(--text);}
+.exp-close{background:transparent;border:none;color:var(--muted);cursor:pointer;display:flex;padding:4px;}
+.exp-search{
+  width:100%;background:var(--surface);border:1.5px solid var(--border);
+  border-radius:10px;padding:11px 13px;color:var(--text);
+  font-family:inherit;font-size:15px;outline:none;margin-bottom:10px;
+  -webkit-appearance:none;appearance:none;
+}
+.exp-search:focus{border-color:var(--accent);}
+.exp-manual{display:flex;gap:8px;margin-bottom:14px;}
+.exp-manual-input{
+  flex:1;min-width:0;background:var(--card);border:1.5px dashed var(--border);
+  border-radius:10px;padding:11px 13px;color:var(--text);
+  font-family:inherit;font-size:14px;outline:none;
+}
+.exp-manual-input:focus{border-color:var(--accent);}
+.exp-manual-add{
+  flex-shrink:0;display:flex;align-items:center;gap:5px;
+  background:var(--accent);color:#0d0d10;border:none;border-radius:10px;
+  padding:0 13px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;
+}
+.exp-manual-add svg{width:15px;height:15px;}
+.exp-list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:8px;}
+.exp-group{display:flex;flex-direction:column;}
+.exp-group-header{
+  display:flex;align-items:center;gap:10px;width:100%;
+  background:var(--card);border:1px solid var(--border);border-radius:11px;
+  padding:14px 14px;cursor:pointer;
+  color:var(--text);font-family:inherit;font-size:16px;font-weight:700;text-align:left;
+}
+.exp-group-header > span:first-child{flex:1;}
+.exp-count{
+  font-size:12px;font-weight:700;color:var(--muted);
+  background:var(--surface);border-radius:20px;padding:2px 9px;
+}
+.exp-chev{color:var(--muted);transition:transform .2s;flex-shrink:0;}
+.exp-group-header.open .exp-chev{transform:rotate(180deg);}
+.exp-items{display:none;flex-direction:column;gap:6px;padding:6px 0 2px;}
+.exp-items.open{display:flex;}
+.exp-item{
+  text-align:left;background:var(--surface);border:1px solid var(--border);
+  border-radius:11px;padding:15px 14px;
+  color:var(--text);font-family:inherit;font-size:16px;font-weight:600;cursor:pointer;
+  transition:background .12s;
+}
+.exp-item:active{background:var(--accent-dim);border-color:var(--accent);}
+.exp-empty{font-size:13px;color:var(--muted);text-align:center;padding:20px 8px;line-height:1.5;}
 .note-modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
 .note-modal-title{font-size:16px;font-weight:700;color:var(--text);}
 .note-modal-close{background:transparent;border:none;color:var(--muted);cursor:pointer;display:flex;padding:4px;}
@@ -776,3 +827,37 @@ body{
 .history-page{display:none;}
 body.show-history .workout-page{display:none;}
 body.show-history .history-page{display:flex;}
+
+/* ── NYÚJTÁS-GYAKORLAT (kártya + pipálható feladatok) ── */
+.focus-card.stretch-card{
+  border-color:var(--blue);
+  background:linear-gradient(180deg, var(--blue-dim), var(--card));
+}
+.task-list{display:flex;flex-direction:column;gap:8px;margin-top:4px;}
+.task-row{
+  display:flex;align-items:center;gap:12px;width:100%;text-align:left;
+  background:var(--surface);border:1.5px solid var(--border);border-radius:12px;
+  padding:15px 14px;cursor:pointer;
+  color:var(--text);font-family:inherit;font-size:15px;font-weight:600;
+  transition:all .15s;
+}
+.task-box{
+  flex-shrink:0;width:26px;height:26px;border-radius:8px;
+  border:2px solid var(--muted);
+  display:flex;align-items:center;justify-content:center;color:#0d0d10;
+}
+.task-name{flex:1;}
+.task-row.done{border-color:var(--blue);background:var(--blue-dim);}
+.task-row.done .task-box{background:var(--blue);border-color:var(--blue);}
+.task-row.done .task-name{color:var(--blue);}
+
+/* nyújtás hozzáadása gomb a szerkesztőben */
+.edit-add-stretch{color:var(--blue);border-color:var(--blue);}
+
+/* hosszú nyomás visszajelzés a cellán */
+.drag-ctrl.confirm-del{outline:2px solid var(--danger);outline-offset:1px;}
+
+/* nyújtás-pill elkülönülő szín */
+.ex-pill.stretch-pill{border-color:var(--blue);color:var(--blue);}
+.ex-pill.stretch-pill.active{background:var(--blue);border-color:var(--blue);color:#0d0d10;}
+.ex-pill.stretch-pill .pill-dot{background:var(--blue);}

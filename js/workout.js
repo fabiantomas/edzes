@@ -8,19 +8,21 @@ import {
   setWorking, clearCell,
   getBodyweight, setBodyweight,
   getNote, setNote,
+  getCheck, setCheck,
   getWorkoutDate, setWorkoutDate, todayISO, fmtDate,
 } from './storage.js';
 import { getExName, setExName } from './names.js';
-import { getDays, addExercise, deleteExercise, moveExercise } from './plans.js';
+import { getDays, addExercise, addStretchExercise, deleteExercise, moveExercise } from './plans.js';
+import { STRETCHES, groupForExercise } from './stretch-data.js';
 import {
   ICON_DUMBBELL_SM, ICON_CHEVRON_UP, ICON_CHEVRON_DOWN,
-  ICON_NOTE, ICON_PLUS, ICON_TRASH, ICON_CLOSE, ICON_CHEVRON_UP as ICON_UP,
+  ICON_NOTE, ICON_PLUS, ICON_TRASH, ICON_CLOSE, ICON_CHECK,
 } from './icons.js';
+const ICON_CHECK_SM = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
 import { showToast } from './toast.js';
 import { registerRenderer, renderExNav, renderSlides, updateNavBtns, updateProgress } from './ui.js';
 import { exportData } from './backup.js';
 import { openExercisePicker } from './exercise-picker.js';
-import { openStretchScreen } from './stretch-screen.js';
 
 function curDay(){ return getDays()[state.currentDay]; }
 
@@ -42,6 +44,7 @@ function doRenderExNav(){
   day.exercises.forEach((ex,i)=>{
     const pill = document.createElement('div');
     pill.className = 'ex-pill';
+    if(ex.type === 'stretch') pill.classList.add('stretch-pill');
     if(i === state.currentEx) pill.classList.add('active');
     if(isExDone(i)) pill.classList.add('done-pill');
 
@@ -65,6 +68,14 @@ function isExDone(ei){
   const day = curDay();
   const ex = day && day.exercises[ei];
   if(!ex) return false;
+  if(ex.type === 'stretch'){
+    const tasks = ex.tasks || [];
+    if(tasks.length === 0) return false;
+    for(let t=0;t<tasks.length;t++){
+      if(!getCheck(state.currentWeek,state.currentDay,ei,t)) return false;
+    }
+    return true;
+  }
   for(let s=0;s<ex.sets;s++){
     for(const f of ['kg','reps']){
       if(getCurrent(state.currentDay,ei,s,f) === null) return false;
@@ -176,6 +187,35 @@ function buildFocusCard(ei){
   top.appendChild(noteBtn);
   card.appendChild(top);
 
+  // NYÚJTÁS típus: pipálható részfeladat-lista (nincs súly/ismétlés)
+  if(ex.type === 'stretch'){
+    card.classList.add('stretch-card');
+    const tasks = ex.tasks || [];
+    const tlist = document.createElement('div');
+    tlist.className = 'task-list';
+    if(tasks.length === 0){
+      const e = document.createElement('div');
+      e.className = 'empty-hint';
+      e.textContent = 'Nincs részfeladat. Szerkesztő módban adhatsz hozzá.';
+      tlist.appendChild(e);
+    }
+    tasks.forEach((task, ti)=>{
+      const row = document.createElement('button');
+      row.className = 'task-row';
+      const checked = getCheck(state.currentWeek, state.currentDay, ei, ti);
+      if(checked) row.classList.add('done');
+      row.innerHTML = `<span class="task-box">${checked ? ICON_CHECK_SM : ''}</span><span class="task-name">${task.replace(/[&<>]/g,'')}</span>`;
+      row.onclick = ()=>{
+        const now = !getCheck(state.currentWeek, state.currentDay, ei, ti);
+        setCheck(state.currentWeek, state.currentDay, ei, ti, now);
+        renderSlides(); renderExNav(); updateProgress(); updateNavBtns();
+      };
+      tlist.appendChild(row);
+    });
+    card.appendChild(tlist);
+    return card;
+  }
+
   // sorozatok
   const list = document.createElement('div');
   list.className = 'sets-list';
@@ -283,7 +323,35 @@ function buildEditList(){
   };
   wrap.appendChild(add);
 
+  // Nyújtás-gyakorlat hozzáadása: a nap izmaihoz illő részfeladatokkal
+  const addStretch = document.createElement('button');
+  addStretch.className = 'edit-add edit-add-stretch';
+  addStretch.innerHTML = ICON_PLUS + '<span>Nyújtás hozzáadása</span>';
+  addStretch.onclick = ()=>{
+    const tasks = suggestedStretchTasks();
+    addStretchExercise(state.currentDay, 'Nyújtás', tasks);
+    renderSlides(); renderExNav();
+  };
+  wrap.appendChild(addStretch);
+
   return wrap;
+}
+
+// A nap meglévő gyakorlatainak izmai alapján javasolt nyújtás-részfeladatok
+function suggestedStretchTasks(){
+  const day = curDay();
+  if(!day) return [];
+  const groups = new Set();
+  day.exercises.forEach((ex,ei)=>{
+    if(ex.type === 'stretch') return;
+    const g = groupForExercise(getExName(state.currentDay, ei));
+    if(g) groups.add(g);
+  });
+  const tasks = [];
+  Object.keys(STRETCHES).forEach(g=>{
+    if(groups.has(g)) (STRETCHES[g]||[]).forEach(t=> tasks.push(t));
+  });
+  return tasks;
 }
 
 // ── Komment modal ──
@@ -541,6 +609,13 @@ function doUpdateProgress(){
   if(!day){ document.getElementById('progFill').style.width = '0%'; return; }
   let filled=0,total=0;
   day.exercises.forEach((ex,ei)=>{
+    if(ex.type === 'stretch'){
+      (ex.tasks||[]).forEach((task,ti)=>{
+        total++;
+        if(getCheck(state.currentWeek,state.currentDay,ei,ti)) filled++;
+      });
+      return;
+    }
     for(let s=0;s<ex.sets;s++){
       ['kg','reps'].forEach(f=>{
         total++;
@@ -558,6 +633,13 @@ export function saveDay(silent=false){
   if(!day) return false;
   let savedAny = false;
   day.exercises.forEach((ex,ei)=>{
+    if(ex.type === 'stretch'){
+      // a pipák már mentődnek a setCheck-kel; csak a dátum-rögzítéshez jelezzük
+      (ex.tasks||[]).forEach((t,ti)=>{
+        if(getCheck(state.currentWeek,state.currentDay,ei,ti)) savedAny = true;
+      });
+      return;
+    }
     for(let s=0;s<ex.sets;s++){
       ['kg','reps'].forEach(f=>{
         const v = getCurrent(state.currentDay,ei,s,f);
@@ -578,7 +660,8 @@ export function saveDay(silent=false){
 export function finishDay(){
   saveDay(true);
   exportData();
-  openStretchScreen();
+  const d = getWorkoutDate(state.currentWeek,state.currentDay);
+  showToast(d ? `Kész – mentve és exportálva (${fmtDate(d)})` : 'Kész – mentve és exportálva');
 }
 
 registerRenderer('exNav', doRenderExNav);

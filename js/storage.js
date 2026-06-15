@@ -51,6 +51,14 @@ export function setNote(w,d,e,txt){
   txt && txt.trim() ? trackedSet(k, txt) : trackedRemove(k);
 }
 
+// ── Nyújtás részfeladat pipa (hét+nap+gyakorlat+feladat-index) ──
+function checkKey(w,d,e,t){ return `${planPrefix()}chk_w${w}_d${d}_e${e}_t${t}`; }
+export function getCheck(w,d,e,t){ return localStorage.getItem(checkKey(w,d,e,t)) === '1'; }
+export function setCheck(w,d,e,t,val){
+  const k = checkKey(w,d,e,t);
+  val ? trackedSet(k, '1') : trackedRemove(k);
+}
+
 // ── Dátum hét+naphoz ──
 function dateKey(w,d){ return `${planPrefix()}date_w${w}_d${d}`; }
 export function getWorkoutDate(w,d){ return localStorage.getItem(dateKey(w,d)); } // YYYY-MM-DD vagy null

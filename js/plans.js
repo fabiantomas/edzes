@@ -142,6 +142,17 @@ export function addExercise(di, name){
   s[di].exercises.push({ name: name || 'Új gyakorlat', sets: DEFAULT_SETS });
   saveStructure(s);
 }
+// Nyújtás-gyakorlat hozzáadása: type='stretch', tasks = részfeladatok nevei
+export function addStretchExercise(di, name, tasks){
+  const s = getStructure();
+  if(!s[di]) return;
+  s[di].exercises.push({
+    name: name || 'Nyújtás',
+    type: 'stretch',
+    tasks: Array.isArray(tasks) ? tasks.slice() : [],
+  });
+  saveStructure(s);
+}
 export function deleteExercise(di, ei){
   const s = getStructure();
   if(!s[di] || !s[di].exercises[ei]) return;
