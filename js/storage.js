@@ -21,6 +21,9 @@ export function getWorking(d,e,s,f){
 export function setWorking(d,e,s,f,val){
   state.workingVals[wKey(d,e,s,f)] = val;
 }
+export function clearWorking(d,e,s,f){
+  delete state.workingVals[wKey(d,e,s,f)];
+}
 
 // ── Mentett sorozat-értékek ──
 export function getStored(w,d,e,s,f){
@@ -29,6 +32,15 @@ export function getStored(w,d,e,s,f){
 }
 export function setStored(w,d,e,s,f,val){
   trackedSet(lsKey(w,d,e,s,f), String(val));
+}
+export function clearStored(w,d,e,s,f){
+  // tombstone-os törlés, hogy a szinkron is törölje
+  trackedRemove(lsKey(w,d,e,s,f));
+}
+// Egy cella teljes ürítése (munka- és mentett érték is)
+export function clearCell(d,e,s,f){
+  clearWorking(d,e,s,f);
+  clearStored(state.currentWeek,d,e,s,f);
 }
 
 // ── Komment hét+nap+gyakorlathoz ──
