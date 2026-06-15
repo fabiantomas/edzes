@@ -23,7 +23,8 @@ function buildBodyweightSection(){
   title.textContent = 'Testsúly';
   wrap.appendChild(title);
 
-  const data = allBodyweights().filter(x=>x.iso); // csak dátummal rendelkezők
+  // minden testsúly, dátummal és anélkül is (a dátum nélkülieket a hét adja sorba)
+  const data = allBodyweights();
 
   const box = document.createElement('div');
   box.className = 'bw-box';
@@ -37,8 +38,10 @@ function buildBodyweightSection(){
     return wrap;
   }
 
-  if(data.length >= 2){
-    box.appendChild(buildBwChart(data));
+  // grafikon csak akkor, ha legalább 2 dátummal rendelkező pont van
+  const dated = data.filter(x=>x.iso);
+  if(dated.length >= 2){
+    box.appendChild(buildBwChart(dated));
   }
 
   // időrendi lista, legfrissebb felül
@@ -49,7 +52,7 @@ function buildBodyweightSection(){
     rowEl.className = 'bw-row';
     const dEl = document.createElement('div');
     dEl.className = 'bw-row-date';
-    dEl.textContent = fmtDate(x.iso);
+    dEl.textContent = x.iso ? fmtDate(x.iso) : `${x.w}. hét`;
     const wEl = document.createElement('div');
     wEl.className = 'bw-row-weight';
     const prev = arr[idx+1]; // idő szerint korábbi

@@ -5,10 +5,10 @@
 import { state } from './state.js';
 import {
   getStored, setStored, getCurrent, getPrev,
-  setWorking,
+  setWorking, clearCell,
   getBodyweight, setBodyweight,
   getNote, setNote,
-  getWorkoutDate, todayISO, fmtDate,
+  getWorkoutDate, setWorkoutDate, todayISO, fmtDate,
 } from './storage.js';
 import { getExName, setExName } from './names.js';
 import { getDays, addExercise, deleteExercise, moveExercise } from './plans.js';
@@ -19,6 +19,8 @@ import {
 import { showToast } from './toast.js';
 import { registerRenderer, renderExNav, renderSlides, updateNavBtns, updateProgress } from './ui.js';
 import { exportData } from './backup.js';
+import { openExercisePicker } from './exercise-picker.js';
+import { openStretchScreen } from './stretch-screen.js';
 
 function curDay(){ return getDays()[state.currentDay]; }
 
@@ -113,6 +115,13 @@ function buildBodyweightCard(){
   label.className = 'bw-full-label';
   label.textContent = 'Mai testsúly';
 
+  const hint = document.createElement('div');
+  hint.className = 'bw-hint';
+  function refreshHint(){
+    const dd = getWorkoutDate(state.currentWeek,state.currentDay);
+    hint.textContent = dd ? `Dátum: ${fmtDate(dd)}` : 'A dátum a beíráskor rögzül.';
+  }
+
   const inputWrap = document.createElement('div');
   inputWrap.className = 'bw-input-wrap bw-input-wrap-lg';
   const input = document.createElement('input');
@@ -122,17 +131,22 @@ function buildBodyweightCard(){
   input.placeholder = '—';
   const cur = getBodyweight(state.currentWeek,state.currentDay);
   if(cur !== null) input.value = cur;
-  input.oninput = ()=>{ setBodyweight(state.currentWeek,state.currentDay, input.value); renderExNav(); };
+  input.oninput = ()=>{
+    setBodyweight(state.currentWeek,state.currentDay, input.value);
+    // ha van érték és még nincs dátum, rögzítsük a mait, hogy a statisztikában megjelenjen
+    if(input.value !== '' && !getWorkoutDate(state.currentWeek,state.currentDay)){
+      setWorkoutDate(state.currentWeek,state.currentDay, todayISO());
+    }
+    refreshHint();
+    renderExNav();
+  };
   const unit = document.createElement('span');
   unit.className = 'bw-unit';
   unit.textContent = 'kg';
   inputWrap.appendChild(input);
   inputWrap.appendChild(unit);
 
-  const hint = document.createElement('div');
-  hint.className = 'bw-hint';
-  const dd = getWorkoutDate(state.currentWeek,state.currentDay);
-  hint.textContent = dd ? `Edzés dátuma: ${fmtDate(dd)}` : 'A dátum mentéskor rögzül.';
+  refreshHint();
 
   card.appendChild(label);
   card.appendChild(inputWrap);
@@ -260,10 +274,12 @@ function buildEditList(){
 
   const add = document.createElement('button');
   add.className = 'edit-add';
-  add.innerHTML = ICON_PLUS + '<span>Új gyakorlat</span>';
+  add.innerHTML = ICON_PLUS + '<span>Gyakorlat hozzáadása</span>';
   add.onclick = ()=>{
-    addExercise(state.currentDay, 'Új gyakorlat');
-    renderSlides(); renderExNav();
+    openExercisePicker((name)=>{
+      addExercise(state.currentDay, name);
+      renderSlides(); renderExNav();
+    });
   };
   wrap.appendChild(add);
 
@@ -390,6 +406,30 @@ function buildDragCtrl(ei, s, f){
     inp.select && inp.select();
   }
 
+  // ── Hosszú nyomás → cella értékének törlése (megerősítéssel) ──
+  let longPressTimer = null;
+  let longPressFired = false;
+  function startLongPress(){
+    longPressFired = false;
+    // csak ha van mit törölni
+    if(getCurrent(state.currentDay,ei,s,f) === null) return;
+    longPressTimer = setTimeout(()=>{
+      longPressFired = true;
+      endDrag();                       // a közben indult húzást lezárjuk
+      wrap.classList.add('confirm-del');
+      const ok = confirm('Törlöd ennek a cellának az értékét?');
+      wrap.classList.remove('confirm-del');
+      if(ok){
+        clearCell(state.currentDay,ei,s,f);
+        renderSlides();                // teljes újrarajzolás, hogy az "előző" visszajöjjön
+        renderExNav(); updateNavBtns(); updateProgress();
+      }
+    }, 600);
+  }
+  function cancelLongPress(){
+    if(longPressTimer){ clearTimeout(longPressTimer); longPressTimer = null; }
+  }
+
   let tStartY = 0, tStartX = 0, totalMove = 0;
   wrap.addEventListener('touchstart', e=>{
     if(inpWrap.classList.contains('editing')) return;
@@ -398,21 +438,26 @@ function buildDragCtrl(ei, s, f){
     tStartX = e.touches[0].clientX;
     totalMove = 0;
     startDrag(tStartY);
+    startLongPress();
   }, {passive:false});
   wrap.addEventListener('touchmove', e=>{
     if(!dragActive) return;
     e.preventDefault();
     const y = e.touches[0].clientY;
     const x = e.touches[0].clientX;
-    totalMove += Math.abs(y - tStartY) + Math.abs(x - tStartX);
+    const moved = Math.abs(y - tStartY) + Math.abs(x - tStartX);
+    totalMove += moved;
+    if(moved > 6) cancelLongPress();   // mozgásnál nem hosszú nyomás
     moveDrag(y);
   }, {passive:false});
   wrap.addEventListener('touchend', ()=>{
+    cancelLongPress();
     const wasDragging = dragActive;
     endDrag();
+    if(longPressFired) return;          // a törlés már lefutott
     if(wasDragging && totalMove < 8){ openKeyboard(); }
   });
-  wrap.addEventListener('touchcancel', ()=>endDrag());
+  wrap.addEventListener('touchcancel', ()=>{ cancelLongPress(); endDrag(); });
 
   let mouseMoved = 0;
   wrap.addEventListener('mousedown', e=>{
@@ -420,11 +465,13 @@ function buildDragCtrl(ei, s, f){
     e.preventDefault();
     mouseMoved = 0;
     startDrag(e.clientY);
-    const mm = ev=>{ ev.preventDefault(); mouseMoved += Math.abs(ev.movementY); moveDrag(ev.clientY); };
+    startLongPress();
+    const mm = ev=>{ ev.preventDefault(); mouseMoved += Math.abs(ev.movementY); if(mouseMoved>4) cancelLongPress(); moveDrag(ev.clientY); };
     const mu = ()=>{
+      cancelLongPress();
       const wasDragging = dragActive;
       endDrag();
-      if(wasDragging && mouseMoved < 4) openKeyboard();
+      if(!longPressFired && wasDragging && mouseMoved < 4) openKeyboard();
       window.removeEventListener('mousemove',mm);
       window.removeEventListener('mouseup',mu);
     };
@@ -531,8 +578,7 @@ export function saveDay(silent=false){
 export function finishDay(){
   saveDay(true);
   exportData();
-  const d = getWorkoutDate(state.currentWeek,state.currentDay);
-  showToast(d ? `Kész – mentve és exportálva (${fmtDate(d)})` : 'Kész – mentve és exportálva');
+  openStretchScreen();
 }
 
 registerRenderer('exNav', doRenderExNav);
