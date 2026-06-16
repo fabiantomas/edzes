@@ -39,6 +39,19 @@ export const STRETCHES = {
     'Galamb póz (csípő)',
     'Ülő törzsfordítás',
   ],
+  'Far / Csípő': [
+    'Galamb póz (csípő/far)',
+    'Fekvő far-nyújtás (4-es alak)',
+    'Csípőhajlító kitöréses nyújtás',
+  ],
+  'Hasizom': [
+    'Kobra póz (has nyújtás)',
+    'Álló hátrahajlás',
+  ],
+  'Törzs / Core': [
+    'Ülő gerinccsavarás',
+    'Oldalsó törzsnyújtás állva',
+  ],
 };
 
 // Az exercise-library alapján: gyakorlatnév → izomcsoport
@@ -51,13 +64,17 @@ const NAME_TO_GROUP = (()=>{
 })();
 
 // Kulcsszavas tartalék, ha a név nincs a könyvtárban (egyedi/manuális gyakorlatok)
+// Sorrend számít: az első találat nyer.
 const KEYWORDS = [
-  [/tricep|koponya|letol|jm nyom|fej fölött|fejfeletti/i, 'Tricepsz'],
-  [/bicep|kalap|scott|karhajl/i, 'Bicepsz'],
-  [/mell|fekvenyom|tárogatás|press|nyomás mell/i, 'Mell'],
-  [/húzód|evez|lehúz|hyper|hát|row/i, 'Hát'],
-  [/váll|oldalem|facepull|landmine|nyomás váll|delt/i, 'Váll'],
-  [/comb|láb|csípő|vádli|guggol|kitör|rdl|extenzió|addukc|hajlít|szán|booty|squat|leg/i, 'Láb'],
+  [/plank|crunch|lábemel|orosz csavar|bicikli|dead bug|hasiz|has csíp/i, 'Hasizom'],
+  [/pallof|bird dog|farmer|oldalra dől|oldalhajl|törzs|core/i, 'Törzs / Core'],
+  [/csípőtol|hip thrust|glute|far|hátrarúg|bridge|abdukc/i, 'Far / Csípő'],
+  [/tricep|koponya|letol|jm nyom|fej fölött|fejfeletti|tolódzk/i, 'Tricepsz'],
+  [/bicep|kalap|scott|karhajl|spider/i, 'Bicepsz'],
+  [/váll|oldalem|előreem|facepull|landmine|arnold|upright|állig|deltoid/i, 'Váll'],
+  [/húzód|evez|lehúz|hyper|pulóver|deadlift|csípőből emel|hát|row/i, 'Hát'],
+  [/mell|fekvenyom|fekvőtám|tárogatás|áthúzás|press|tolódzkodás/i, 'Mell'],
+  [/comb|láb|guggol|kitör|rdl|extenzió|addukc|hajlít|vádli|squat|leg|bolgár/i, 'Láb'],
 ];
 
 export function groupForExercise(name){
